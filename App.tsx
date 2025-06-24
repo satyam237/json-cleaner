@@ -73,6 +73,7 @@ const App: React.FC = () => {
     setRawJson(value);
   }, []);
 
+  // Handle rawJson changes with debouncing
   useEffect(() => {
     const handler = setTimeout(() => {
       if (rawJson.trim() === '') {
@@ -82,9 +83,9 @@ const App: React.FC = () => {
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [rawJson, processJson, selectedOutputFormat]);
+  }, [rawJson, processJson]); // Removed selectedOutputFormat to prevent race condition
 
-  // Simplified format switching - always process when format changes
+  // Handle format switching immediately (no debouncing needed)
   useEffect(() => {
     processJson(rawJson, selectedOutputFormat);
   }, [selectedOutputFormat, processJson]);
