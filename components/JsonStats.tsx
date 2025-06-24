@@ -29,7 +29,7 @@ export const JsonStats: React.FC<JsonStatsProps> = ({
   const originalStats = calculateStats(originalText);
   const formattedStats = calculateStats(formattedText);
   
-  const compressionRatio = originalText && formattedText 
+  const compressionRatio = originalText && formattedText && originalStats.bytes > 0
     ? ((1 - formattedStats.bytes / originalStats.bytes) * 100).toFixed(1)
     : null;
 
@@ -49,7 +49,7 @@ export const JsonStats: React.FC<JsonStatsProps> = ({
         </span>
         {showComparison && compressionRatio && (
           <span className={`${Number(compressionRatio) > 0 ? 'text-green-400' : 'text-red-400'}`}>
-            <strong>Compression:</strong> {compressionRatio > 0 ? '+' : ''}{compressionRatio}%
+            <strong>Compression:</strong> {Number(compressionRatio) > 0 ? '+' : ''}{compressionRatio}%
           </span>
         )}
       </div>

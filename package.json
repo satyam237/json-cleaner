@@ -1,7 +1,7 @@
 {
   "name": "json-buddy-app",
   "version": "1.0.0",
-  "description": "JSON Buddy: Online JSON Formatter, Validator & Cleaner",
+  "description": "aijsonformatter: AI-Powered Online JSON Formatter, Validator & Cleaner",
   "private": true,
   "scripts": {
     "dev": "vite",

@@ -2,7 +2,7 @@
 
 **Live at: [aijsonformatter.site](https://aijsonformatter.site)**
 
-A beautiful, intelligent web application that makes working with JSON data effortless. Whether you're a developer debugging API responses, a data analyst cleaning datasets, or anyone dealing with JSON structures, JSON Buddy provides the tools you need to format, validate, and fix your data instantly.
+A beautiful, intelligent web application that makes working with JSON data effortless. Whether you're a developer debugging API responses, a data analyst cleaning datasets, or anyone dealing with JSON structures, aijsonformatter provides the tools you need to format, validate, and fix your data instantly.
 
 ---
 
@@ -96,7 +96,7 @@ aijsonformatter leverages Google's Gemini AI to provide intelligent error correc
 
 ---
 
-## 🔗 Access JSON Buddy
+## 🔗 Access aijsonformatter
 
 **Visit**: [aijsonformatter.site](https://aijsonformatter.site)
 

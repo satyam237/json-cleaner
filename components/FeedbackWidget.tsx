@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 
+// Declare gtag for Google Analytics
+declare global {
+  function gtag(...args: any[]): void;
+}
+
 interface FeedbackWidgetProps {
   className?: string;
 }
@@ -78,4 +83,7 @@ export const FeedbackWidget: React.FC<FeedbackWidgetProps> = ({ className }) => 
             <ThumbsDownIcon className="w-4 h-4" />
           </button>
         </div>
- 
+      </div>
+    </div>
+  );
+};
