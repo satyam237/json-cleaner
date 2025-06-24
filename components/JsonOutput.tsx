@@ -22,54 +22,7 @@ const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-// JSON syntax highlighting function
-const highlightJsonSyntax = (text: string): string => {
-  if (!text.trim()) return text;
 
-  // Function to safely escape HTML in capture groups
-  const escapeHtml = (str: string) => str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  let highlighted = text;
-
-  // Highlight strings (both single and double quoted) - blue-green
-  highlighted = highlighted.replace(
-    /"([^"\\]*(\\.[^"\\]*)*)"/g,
-    (match, content) => `<span style="color: #7dd3fc;">"${escapeHtml(content)}"</span>`
-  );
-  highlighted = highlighted.replace(
-    /'([^'\\]*(\\.[^'\\]*)*)'/g,
-    (match, content) => `<span style="color: #7dd3fc;">'${escapeHtml(content)}'</span>`
-  );
-
-  // Highlight numbers - light orange
-  highlighted = highlighted.replace(
-    /\b(-?\d+\.?\d*([eE][+-]?\d+)?)\b/g,
-    '<span style="color: #fbbf24;">$1</span>'
-  );
-
-  // Highlight booleans and null - purple
-  highlighted = highlighted.replace(
-    /\b(true|false|null|True|False|None)\b/g,
-    '<span style="color: #c084fc;">$1</span>'
-  );
-
-  // Highlight brackets and braces - light gray
-  highlighted = highlighted.replace(
-    /([{}[\]])/g,
-    '<span style="color: #94a3b8;">$1</span>'
-  );
-
-  // Highlight colons and commas - gray
-  highlighted = highlighted.replace(
-    /([:,])/g,
-    '<span style="color: #64748b;">$1</span>'
-  );
-
-  return highlighted;
-};
 
 // Calculate vertical guide lines for brackets
 const calculateGuideLines = (text: string): Array<{ left: number; top: number; height: number; level: number }> => {
@@ -145,7 +98,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   showAiHighlights = false
 }) => {
   const contentRef = useRef<HTMLPreElement>(null);
-  const syntaxHighlightRef = useRef<HTMLDivElement>(null);
+
   const aiHighlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const guidesRef = useRef<HTMLDivElement>(null);
@@ -193,10 +146,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return calculateGuideLines(displayData);
   }, [displayData]);
 
-  // Create syntax highlighted content
-  const syntaxHighlightedContent = useMemo(() => {
-    return highlightJsonSyntax(displayData);
-  }, [displayData]);
+
 
   // Update line count when display data changes
   useEffect(() => {
@@ -267,12 +217,10 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
 
   // Sync scroll between all elements
   const handleScroll = useCallback((e: React.UIEvent<HTMLPreElement>) => {
-    if (syntaxHighlightRef.current && aiHighlightRef.current && lineNumbersRef.current && guidesRef.current) {
+    if (aiHighlightRef.current && lineNumbersRef.current && guidesRef.current) {
       const scrollTop = e.currentTarget.scrollTop;
       const scrollLeft = e.currentTarget.scrollLeft;
       
-      syntaxHighlightRef.current.scrollTop = scrollTop;
-      syntaxHighlightRef.current.scrollLeft = scrollLeft;
       aiHighlightRef.current.scrollTop = scrollTop;
       aiHighlightRef.current.scrollLeft = scrollLeft;
       lineNumbersRef.current.scrollTop = scrollTop;
@@ -368,22 +316,12 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
           />
         )}
 
-        {/* Syntax Highlighting Layer */}
-        <div
-          ref={syntaxHighlightRef}
-          className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-10"
-          style={{ 
-            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-            fontSize: '14px',
-            lineHeight: '1.5',
-          }}
-          dangerouslySetInnerHTML={{ __html: syntaxHighlightedContent }}
-        />
+
         
         {/* Actual content */}
         <pre 
           ref={contentRef}
-          className="w-full h-full p-4 overflow-auto text-transparent relative z-20"
+          className="w-full h-full p-4 overflow-auto text-slate-200 relative z-20"
           style={{ 
             fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
             fontSize: '14px',
