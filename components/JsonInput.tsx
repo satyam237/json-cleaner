@@ -25,6 +25,49 @@ const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 
 
+// Simple and clean syntax highlighting
+const highlightJsonSyntax = (text: string): string => {
+  if (!text.trim()) return '';
+
+  let highlighted = text;
+
+  // Highlight strings - blue
+  highlighted = highlighted.replace(
+    /"([^"\\]*(\\.[^"\\]*)*)"/g,
+    '<span style="color: #7dd3fc">$&</span>'
+  );
+  highlighted = highlighted.replace(
+    /'([^'\\]*(\\.[^'\\]*)*)'/g,
+    '<span style="color: #7dd3fc">$&</span>'
+  );
+
+  // Highlight numbers - orange
+  highlighted = highlighted.replace(
+    /\b(-?\d+\.?\d*([eE][+-]?\d+)?)\b/g,
+    '<span style="color: #fbbf24">$1</span>'
+  );
+
+  // Highlight booleans and null - purple
+  highlighted = highlighted.replace(
+    /\b(true|false|null|True|False|None)\b/g,
+    '<span style="color: #c084fc">$1</span>'
+  );
+
+  // Highlight brackets and braces - light gray
+  highlighted = highlighted.replace(
+    /([{}[\]])/g,
+    '<span style="color: #94a3b8">$1</span>'
+  );
+
+  // Highlight colons and commas - gray
+  highlighted = highlighted.replace(
+    /([:,])/g,
+    '<span style="color: #64748b">$1</span>'
+  );
+
+  return highlighted;
+};
+
 // Calculate vertical guide lines for brackets
 const calculateGuideLines = (text: string): Array<{ left: number; top: number; height: number; level: number }> => {
   const lines = text.split('\n');
@@ -102,7 +145,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-
+  const highlightRef = useRef<HTMLDivElement>(null);
   const guidesRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
@@ -153,6 +196,10 @@ export const JsonInput: React.FC<JsonInputProps> = ({
     return calculateGuideLines(displayValue);
   }, [displayValue]);
 
+  // Create highlighted content
+  const highlightedContent = useMemo(() => {
+    return highlightJsonSyntax(displayValue);
+  }, [displayValue]);
 
 
   // Update read-only mode based on collapsed sections
@@ -216,11 +263,13 @@ export const JsonInput: React.FC<JsonInputProps> = ({
 
   // Sync scroll between all elements
   const handleScroll = useCallback(() => {
-    if (textareaRef.current && lineNumbersRef.current && guidesRef.current) {
+    if (textareaRef.current && lineNumbersRef.current && highlightRef.current && guidesRef.current) {
       const scrollTop = textareaRef.current.scrollTop;
       const scrollLeft = textareaRef.current.scrollLeft;
       
       lineNumbersRef.current.scrollTop = scrollTop;
+      highlightRef.current.scrollTop = scrollTop;
+      highlightRef.current.scrollLeft = scrollLeft;
       guidesRef.current.scrollTop = scrollTop;
       guidesRef.current.scrollLeft = scrollLeft;
     }
@@ -299,7 +348,17 @@ export const JsonInput: React.FC<JsonInputProps> = ({
           ))}
         </div>
 
-
+        {/* Syntax Highlighting Layer */}
+        <div
+          ref={highlightRef}
+          className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre z-10"
+          style={{ 
+            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+            fontSize: '14px',
+            lineHeight: '1.5',
+          }}
+          dangerouslySetInnerHTML={{ __html: highlightedContent }}
+        />
         
         {/* Text Area */}
         <textarea
@@ -308,7 +367,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
           onChange={handleChange}
           onScroll={handleScroll}
           placeholder={placeholder || "Paste your JSON here for online formatting, validation, or to check JSON syntax..."}
-          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 text-slate-200 bg-transparent flex-1 relative z-15 ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
+          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 text-transparent bg-transparent flex-1 relative z-15 caret-slate-200 ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
           spellCheck="false"
           readOnly={isReadOnlyMode}
           style={{ 
