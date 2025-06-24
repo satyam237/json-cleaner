@@ -1,6 +1,6 @@
 // Use CommonJS require for Vercel compatibility
 const { GoogleGenAI } = require("@google/genai");
-const { GEMINI_MODEL_NAME } = require('../constants'); // Adjust path if constants.tsx is not in root
+const { GEMINI_MODEL_NAME } = require('../constants.cjs.js');
 
 // Make sure GEMINI_MODEL_NAME is accessible. If constants.tsx is in the root:
 // import { GEMINI_MODEL_NAME } from '../constants'; 
