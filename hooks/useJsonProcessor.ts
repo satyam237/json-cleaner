@@ -108,20 +108,11 @@ export const useJsonProcessor = () => {
     setError(null);
     setPendingAiConversionToJSON(false);
 
-    // Debug format switching
-    console.log('processJson called:', {
-      targetOutputFormat,
-      formatOfCurrentOutput,
-      hasValidObject: !!lastValidParsedJsonObject,
-      rawJsonWasSourceOfLVPJO
-    });
-
     if (lastValidParsedJsonObject &&
         (targetOutputFormat !== formatOfCurrentOutput ||
          (targetOutputFormat === formatOfCurrentOutput && !rawJsonWasSourceOfLVPJO)
         )
        ) {
-      console.log('Using cached object for format conversion');
       if (targetOutputFormat === 'json') {
         setFormattedJson(JSON.stringify(lastValidParsedJsonObject, null, 2));
       } else { 
