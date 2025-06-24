@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { JsonProcessingError } from '../types';
 // import { GEMINI_MODEL_NAME } from '../constants'; // Backend will use this
@@ -120,6 +119,17 @@ export const useJsonProcessor = () => {
   const clearPendingAiConversion = useCallback(() => {
     setPendingAiConversionToJSON(false);
   }, []);
+
+  const forceProcessJson = useCallback((jsonString: string, targetOutputFormat: OutputFormat) => {
+    // Clear cached state to force fresh processing
+    setLastValidParsedJsonObject(null);
+    setRawJsonWasSourceOfLVPJO(false);
+    setFormatOfCurrentOutput(null);
+    setLastAiInputForPython(null);
+    
+    // Now process with fresh state
+    processJson(jsonString, targetOutputFormat);
+  }, [processJson]);
 
   const tryLocalFix = useCallback(async (jsonString: string): Promise<string> => {
     setIsLoading(true);
@@ -261,6 +271,7 @@ export const useJsonProcessor = () => {
     tryLocalFix, 
     tryAiFix,
     pendingAiConversionToJSON,
-    clearPendingAiConversion
+    clearPendingAiConversion,
+    forceProcessJson
   };
 };

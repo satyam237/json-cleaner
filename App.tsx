@@ -63,6 +63,7 @@ const App: React.FC = () => {
     tryAiFix,
     pendingAiConversionToJSON,
     clearPendingAiConversion,
+    forceProcessJson,
   } = useJsonProcessor();
 
   const handleInputChange = useCallback((value: string) => {
@@ -309,7 +310,7 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-3 items-start">
-              <Button onClick={() => processJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading} className="w-full">
+              <Button onClick={() => forceProcessJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading} className="w-full">
                 View
               </Button>
               <Button onClick={handleLocalFix} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || !rawJson.trim()} className="w-full">
