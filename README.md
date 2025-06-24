@@ -1,6 +1,6 @@
 # JSON Buddy: AI-Powered JSON Formatter & Validator
 
-**Live at: [www.aijsonformatter.site](https://www.aijsonformatter.site)**
+**Live at: [aijsonformatter.site](https://aijsonformatter.site)**
 
 A beautiful, intelligent web application that makes working with JSON data effortless. Whether you're a developer debugging API responses, a data analyst cleaning datasets, or anyone dealing with JSON structures, JSON Buddy provides the tools you need to format, validate, and fix your data instantly.
 
@@ -98,7 +98,7 @@ JSON Buddy leverages Google's Gemini AI to provide intelligent error correction 
 
 ## 🔗 Access JSON Buddy
 
-**Visit**: [www.aijsonformatter.site](https://www.aijsonformatter.site)
+**Visit**: [aijsonformatter.site](https://aijsonformatter.site)
 
 Start formatting and fixing your JSON data instantly - no signup or installation required.
 
@@ -109,7 +109,7 @@ Start formatting and fixing your JSON data instantly - no signup or installation
 **Satyam Jadhav**  
 Full-Stack Developer & AI Enthusiast
 
-- 🌐 **Website**: [www.aijsonformatter.site](https://www.aijsonformatter.site)
+- 🌐 **Website**: [aijsonformatter.site](https://aijsonformatter.site)
 - 💼 **GitHub**: [github.com/satyam237](https://github.com/satyam237)  
 - 📧 **Email**: satyam2373@gmail.com
 
