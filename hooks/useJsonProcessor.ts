@@ -11,11 +11,56 @@ export interface AiChange {
   content: string;
 }
 
-// Simple diff function to find changed lines
+// Smart diff function that ignores formatting and focuses on actual content changes
 function calculateChanges(original: string, modified: string): AiChange[] {
+  const changes: AiChange[] = [];
+  
+  // First, try to parse both as JSON to compare structure
+  let originalParsed: any = null;
+  let modifiedParsed: any = null;
+  
+  try {
+    originalParsed = JSON.parse(original);
+  } catch (e) {
+    // If original can't be parsed, it means AI fixed structural issues
+  }
+  
+  try {
+    modifiedParsed = JSON.parse(modified);
+  } catch (e) {
+    // If modified can't be parsed, something went wrong
+  }
+  
+  // If both can be parsed as JSON, compare the actual data structure
+  if (originalParsed !== null && modifiedParsed !== null) {
+    const originalStringified = JSON.stringify(originalParsed);
+    const modifiedStringified = JSON.stringify(modifiedParsed);
+    
+    // If the underlying data is the same, no meaningful changes were made
+    if (originalStringified === modifiedStringified) {
+      return []; // No actual changes, just formatting
+    }
+    
+    // If there are structural differences, we need a more sophisticated comparison
+    // Parse both into normalized format and find differences at the content level
+    return findStructuralDifferences(original, modified, originalParsed, modifiedParsed);
+  }
+  
+  // If we can't parse both as JSON, fall back to line comparison
+  return findLineDifferences(original, modified);
+}
+
+// Helper function to find structural differences in JSON
+function findStructuralDifferences(original: string, modified: string, originalData: any, modifiedData: any): AiChange[] {
+  const changes: AiChange[] = [];
   const originalLines = original.split('\n');
   const modifiedLines = modified.split('\n');
-  const changes: AiChange[] = [];
+  
+  // Extract meaningful content (keys, values) from each line
+  const extractContent = (line: string): string => {
+    // Remove whitespace and structural characters, keep only meaningful content
+    return line.replace(/[\s{}\[\],]/g, '').replace(/^"|"$/g, '');
+  };
   
   const maxLines = Math.max(originalLines.length, modifiedLines.length);
   
@@ -23,12 +68,54 @@ function calculateChanges(original: string, modified: string): AiChange[] {
     const originalLine = originalLines[i] || '';
     const modifiedLine = modifiedLines[i] || '';
     
-    if (originalLine !== modifiedLine) {
-      if (originalLine && modifiedLine) {
+    const originalContent = extractContent(originalLine);
+    const modifiedContent = extractContent(modifiedLine);
+    
+    // Only flag as different if the actual content (not formatting) changed
+    if (originalContent !== modifiedContent && (originalContent || modifiedContent)) {
+      if (originalContent && modifiedContent) {
         changes.push({ line: i, type: 'modified', content: modifiedLine });
-      } else if (modifiedLine) {
+      } else if (modifiedContent) {
         changes.push({ line: i, type: 'added', content: modifiedLine });
-      } else if (originalLine) {
+      } else if (originalContent) {
+        changes.push({ line: i, type: 'removed', content: originalLine });
+      }
+    }
+  }
+  
+  return changes;
+}
+
+// Helper function for line-based differences when JSON parsing fails
+function findLineDifferences(original: string, modified: string): AiChange[] {
+  const changes: AiChange[] = [];
+  const originalLines = original.split('\n');
+  const modifiedLines = modified.split('\n');
+  
+  // Normalize lines by removing extra whitespace for comparison
+  const normalizeForComparison = (line: string) => {
+    return line.trim().replace(/\s+/g, ' ');
+  };
+  
+  const maxLines = Math.max(originalLines.length, modifiedLines.length);
+  
+  for (let i = 0; i < maxLines; i++) {
+    const originalLine = originalLines[i] || '';
+    const modifiedLine = modifiedLines[i] || '';
+    
+    const normalizedOriginal = normalizeForComparison(originalLine);
+    const normalizedModified = normalizeForComparison(modifiedLine);
+    
+    // Only flag as different if the normalized content is actually different
+    if (normalizedOriginal !== normalizedModified) {
+      if (normalizedOriginal && normalizedModified) {
+        // Content was modified
+        changes.push({ line: i, type: 'modified', content: modifiedLine });
+      } else if (normalizedModified) {
+        // Content was added
+        changes.push({ line: i, type: 'added', content: modifiedLine });
+      } else if (normalizedOriginal) {
+        // Content was removed
         changes.push({ line: i, type: 'removed', content: originalLine });
       }
     }
@@ -261,23 +348,47 @@ export const useJsonProcessor = () => {
         
         // Calculate changes between what normal processing would produce vs AI output
         let expectedOutput = '';
+        let shouldCalculateChanges = true;
+        
         try {
-          // Try to parse the original input and format it normally
+          // Try to parse the original input to see if it was valid JSON
           const parsed = JSON.parse(jsonString);
-          if (outputFormat === 'json') {
-            expectedOutput = JSON.stringify(parsed, null, 2);
-          } else {
-            expectedOutput = formatJsObjectToPythonString(parsed);
+          
+          // If original was valid JSON, check if AI made any structural changes
+          let aiParsed: any = null;
+          try {
+            aiParsed = JSON.parse(aiResult.correctedText);
+            
+            // Compare the actual data structures
+            const originalStringified = JSON.stringify(parsed);
+            const aiStringified = JSON.stringify(aiParsed);
+            
+            if (originalStringified === aiStringified) {
+              // No structural changes, just formatting - don't highlight
+              shouldCalculateChanges = false;
+            } else {
+              // There are structural changes - compare against original input
+              expectedOutput = jsonString;
+            }
+          } catch (e) {
+            // AI output is not valid JSON - compare against original
+            expectedOutput = jsonString;
           }
         } catch (e) {
-          // If original input is invalid JSON, compare against the raw input
-          // This helps show what AI changed from the malformed input
+          // Original input was invalid JSON - compare against cleaned version
+          // This will show what AI fixed from the malformed input
           expectedOutput = jsonString;
         }
         
-        const changes = calculateChanges(expectedOutput, aiResult.correctedText);
-        setAiChanges(changes);
-        setShowAiHighlights(changes.length > 0);
+        if (shouldCalculateChanges) {
+          const changes = calculateChanges(expectedOutput, aiResult.correctedText);
+          setAiChanges(changes);
+          setShowAiHighlights(changes.length > 0);
+        } else {
+          // No meaningful changes to highlight
+          setAiChanges([]);
+          setShowAiHighlights(false);
+        }
         
         if (outputFormat === 'json') {
           try {
