@@ -1,4 +1,3 @@
-
 {
   "compilerOptions": {
     "target": "ESNext",
@@ -18,7 +17,9 @@
     "baseUrl": ".",
     "paths": {
       "@components/*": ["components/*"],
+      "@components/ui/*": ["components/ui/*"],
       "@hooks/*": ["hooks/*"],
+      "@lib/*": ["lib/*"],
       "@constants": ["constants.tsx"], // Direct file mapping
       "@appTypes": ["types.ts"] // Direct file mapping for types
     }
@@ -27,7 +28,8 @@
     "**/*.ts",
     "**/*.tsx",
     // Ensure API directory is included if not covered by above
-    "api/**/*.ts" 
+    "api/**/*.ts",
+    "lib/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }
