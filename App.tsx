@@ -9,7 +9,7 @@ import { JsonOutput } from './components/JsonOutput';
 import { Button } from './components/Button';
 import { Alert } from './components/Alert';
 import { JsonStats } from './components/JsonStats';
-import { FeedbackWidget } from './components/FeedbackWidget';
+
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
@@ -546,7 +546,7 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <FeedbackWidget className="max-w-md mx-auto" />
+
         </div>
       </section>
 

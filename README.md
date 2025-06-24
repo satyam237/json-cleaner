@@ -24,7 +24,6 @@ A beautiful, intelligent web application that makes working with JSON data effor
 - **Real-time Statistics**: Character count, lines, file size, and compression ratio
 - **Collapsible Sections**: Expand/collapse JSON objects and arrays with arrow controls
 - **Keyboard Shortcuts**: Power-user shortcuts for common actions
-- **User Feedback**: Built-in satisfaction tracking
 - **Google Analytics**: Usage tracking and performance monitoring
 
 ### 🎨 **User Experience**
