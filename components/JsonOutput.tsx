@@ -22,75 +22,6 @@ const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-
-
-// Calculate vertical guide lines for brackets
-const calculateGuideLines = (text: string): Array<{ left: number; top: number; height: number; level: number }> => {
-  const lines = text.split('\n');
-  const guides: Array<{ left: number; top: number; height: number; level: number }> = [];
-  const stack: Array<{ char: string; line: number; col: number; level: number }> = [];
-  let currentLevel = 0;
-
-  lines.forEach((line, lineIndex) => {
-    let inString = false;
-    let escapeNext = false;
-    let stringDelimiter = '';
-
-    for (let col = 0; col < line.length; col++) {
-      const char = line[col];
-
-      if (escapeNext) {
-        escapeNext = false;
-        continue;
-      }
-
-      if (char === '\\' && inString) {
-        escapeNext = true;
-        continue;
-      }
-
-      if ((char === '"' || char === "'") && !inString) {
-        inString = true;
-        stringDelimiter = char;
-        continue;
-      } else if (char === stringDelimiter && inString) {
-        inString = false;
-        stringDelimiter = '';
-        continue;
-      }
-
-      if (inString) continue;
-
-      if (char === '{' || char === '[') {
-        stack.push({ char, line: lineIndex, col, level: currentLevel });
-        currentLevel++;
-      } else if (char === '}' || char === ']') {
-        if (stack.length > 0) {
-          const opener = stack.pop()!;
-          const matching = (char === '}' && opener.char === '{') || (char === ']' && opener.char === '[');
-          
-          if (matching && lineIndex > opener.line) {
-            // Calculate guide line position
-            const left = opener.col * 8.4 + 16; // Approximate character width in monospace
-            const top = (opener.line + 1) * 24; // Line height
-            const height = (lineIndex - opener.line) * 24;
-            
-            guides.push({
-              left,
-              top,
-              height,
-              level: opener.level
-            });
-          }
-        }
-        currentLevel = Math.max(0, currentLevel - 1);
-      }
-    }
-  });
-
-  return guides;
-};
-
 export const JsonOutput: React.FC<JsonOutputProps> = ({ 
   data, 
   className,
@@ -98,10 +29,8 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   showAiHighlights = false
 }) => {
   const contentRef = useRef<HTMLPreElement>(null);
-
-  const aiHighlightRef = useRef<HTMLDivElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-  const guidesRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [isValidJson, setIsValidJson] = useState(false);
@@ -141,13 +70,6 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return hasCollapsed ? getCollapsedContent(data, collapsibleSections) : data;
   }, [data, collapsibleSections, jsonStructure]);
 
-  // Calculate guide lines
-  const guideLines = useMemo(() => {
-    return calculateGuideLines(displayData);
-  }, [displayData]);
-
-
-
   // Update line count when display data changes
   useEffect(() => {
     const lines = displayData.split('\n').length;
@@ -183,8 +105,8 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return collapsibleSections.findIndex(section => section.startLine === lineNumber);
   }, [collapsibleSections]);
 
-  // Create AI highlighted content
-  const createAiHighlightedContent = useCallback(() => {
+  // Create highlighted content
+  const createHighlightedContent = useCallback(() => {
     if (!showAiHighlights || aiChanges.length === 0 || !displayData) {
       return '';
     }
@@ -215,17 +137,12 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return highlightedLines.join('');
   }, [showAiHighlights, aiChanges, displayData]);
 
-  // Sync scroll between all elements
+  // Sync scroll between content, highlights, and line numbers
   const handleScroll = useCallback((e: React.UIEvent<HTMLPreElement>) => {
-    if (aiHighlightRef.current && lineNumbersRef.current && guidesRef.current) {
-      const scrollTop = e.currentTarget.scrollTop;
-      const scrollLeft = e.currentTarget.scrollLeft;
-      
-      aiHighlightRef.current.scrollTop = scrollTop;
-      aiHighlightRef.current.scrollLeft = scrollLeft;
-      lineNumbersRef.current.scrollTop = scrollTop;
-      guidesRef.current.scrollTop = scrollTop;
-      guidesRef.current.scrollLeft = scrollLeft;
+    if (highlightRef.current && lineNumbersRef.current) {
+      highlightRef.current.scrollTop = e.currentTarget.scrollTop;
+      highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
     }
   }, []);
 
@@ -234,7 +151,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
       {/* Line Numbers with Collapse/Expand Controls */}
       <div 
         ref={lineNumbersRef}
-        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden relative z-20"
+        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden"
         style={{
           fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
           fontSize: '14px',
@@ -279,54 +196,30 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
 
       {/* Content Area Container */}
       <div className="relative flex-1 overflow-hidden">
-        {/* Vertical Guide Lines */}
-        <div
-          ref={guidesRef}
-          className="absolute inset-0 pointer-events-none overflow-hidden z-5"
-          style={{ 
-            paddingLeft: '16px',
-            paddingTop: '16px',
-          }}
-        >
-          {guideLines.map((guide, index) => (
-            <div
-              key={index}
-              className="absolute border-l border-slate-600/30"
-              style={{
-                left: `${guide.left}px`,
-                top: `${guide.top}px`,
-                height: `${guide.height}px`,
-                opacity: 0.4 - (guide.level * 0.05), // Fade deeper levels
-              }}
-            />
-          ))}
-        </div>
-
-        {/* AI Highlight layer */}
+        {/* Highlight layer */}
         {showAiHighlights && aiChanges.length > 0 && (
           <div
-            ref={aiHighlightRef}
-            className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-15"
+            ref={highlightRef}
+            className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-0"
             style={{ 
               fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
               fontSize: '14px',
               lineHeight: '1.5',
+              background: 'rgba(30, 41, 59, 0.5)',
             }}
-            dangerouslySetInnerHTML={{ __html: createAiHighlightedContent() }}
+            dangerouslySetInnerHTML={{ __html: createHighlightedContent() }}
           />
         )}
-
-
         
         {/* Actual content */}
         <pre 
           ref={contentRef}
-          className="w-full h-full p-4 overflow-auto text-slate-200 relative z-20"
+          className="w-full h-full p-4 overflow-auto text-slate-200 relative z-10"
           style={{ 
             fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
             fontSize: '14px',
             lineHeight: '1.5',
-            background: 'transparent',
+            background: showAiHighlights ? 'transparent' : 'rgba(30, 41, 59, 0.5)',
             tabSize: 2,
             whiteSpace: 'pre',
             margin: 0
@@ -336,11 +229,13 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
           <code className="leading-6">{displayData}</code>
         </pre>
         
-        {/* Background */}
-        <div 
-          className="absolute inset-0 pointer-events-none -z-10"
-          style={{ background: 'rgba(30, 41, 59, 0.5)' }}
-        />
+        {/* Background for when not highlighting */}
+        {!showAiHighlights && (
+          <div 
+            className="absolute inset-0 pointer-events-none -z-10"
+            style={{ background: 'rgba(30, 41, 59, 0.5)' }}
+          />
+        )}
       </div>
     </div>
   );

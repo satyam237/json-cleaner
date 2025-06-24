@@ -23,75 +23,6 @@ const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
-
-
-// Calculate vertical guide lines for brackets
-const calculateGuideLines = (text: string): Array<{ left: number; top: number; height: number; level: number }> => {
-  const lines = text.split('\n');
-  const guides: Array<{ left: number; top: number; height: number; level: number }> = [];
-  const stack: Array<{ char: string; line: number; col: number; level: number }> = [];
-  let currentLevel = 0;
-
-  lines.forEach((line, lineIndex) => {
-    let inString = false;
-    let escapeNext = false;
-    let stringDelimiter = '';
-
-    for (let col = 0; col < line.length; col++) {
-      const char = line[col];
-
-      if (escapeNext) {
-        escapeNext = false;
-        continue;
-      }
-
-      if (char === '\\' && inString) {
-        escapeNext = true;
-        continue;
-      }
-
-      if ((char === '"' || char === "'") && !inString) {
-        inString = true;
-        stringDelimiter = char;
-        continue;
-      } else if (char === stringDelimiter && inString) {
-        inString = false;
-        stringDelimiter = '';
-        continue;
-      }
-
-      if (inString) continue;
-
-      if (char === '{' || char === '[') {
-        stack.push({ char, line: lineIndex, col, level: currentLevel });
-        currentLevel++;
-      } else if (char === '}' || char === ']') {
-        if (stack.length > 0) {
-          const opener = stack.pop()!;
-          const matching = (char === '}' && opener.char === '{') || (char === ']' && opener.char === '[');
-          
-          if (matching && lineIndex > opener.line) {
-            // Calculate guide line position
-            const left = opener.col * 8.4 + 16; // Approximate character width in monospace
-            const top = (opener.line + 1) * 24; // Line height
-            const height = (lineIndex - opener.line) * 24;
-            
-            guides.push({
-              left,
-              top,
-              height,
-              level: opener.level
-            });
-          }
-        }
-        currentLevel = Math.max(0, currentLevel - 1);
-      }
-    }
-  });
-
-  return guides;
-};
-
 export const JsonInput: React.FC<JsonInputProps> = ({ 
   value, 
   onChange, 
@@ -102,8 +33,6 @@ export const JsonInput: React.FC<JsonInputProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
-
-  const guidesRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [isValidJson, setIsValidJson] = useState(false);
@@ -147,13 +76,6 @@ export const JsonInput: React.FC<JsonInputProps> = ({
     const hasCollapsed = collapsibleSections.some(s => s.isCollapsed);
     return hasCollapsed ? getCollapsedContent(value, collapsibleSections) : value;
   }, [value, collapsibleSections, jsonStructure]);
-
-  // Calculate guide lines
-  const guideLines = useMemo(() => {
-    return calculateGuideLines(displayValue);
-  }, [displayValue]);
-
-
 
   // Update read-only mode based on collapsed sections
   useEffect(() => {
@@ -214,15 +136,10 @@ export const JsonInput: React.FC<JsonInputProps> = ({
     return collapsibleSections.findIndex(section => section.startLine === lineNumber);
   }, [collapsibleSections]);
 
-  // Sync scroll between all elements
+  // Sync scroll between textarea and line numbers
   const handleScroll = useCallback(() => {
-    if (textareaRef.current && lineNumbersRef.current && guidesRef.current) {
-      const scrollTop = textareaRef.current.scrollTop;
-      const scrollLeft = textareaRef.current.scrollLeft;
-      
-      lineNumbersRef.current.scrollTop = scrollTop;
-      guidesRef.current.scrollTop = scrollTop;
-      guidesRef.current.scrollLeft = scrollLeft;
+    if (textareaRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
     }
   }, []);
 
@@ -231,7 +148,7 @@ export const JsonInput: React.FC<JsonInputProps> = ({
       {/* Line Numbers with Collapse/Expand Controls */}
       <div 
         ref={lineNumbersRef}
-        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden relative z-20"
+        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden"
         style={{
           fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
           fontSize: '14px',
@@ -274,64 +191,30 @@ export const JsonInput: React.FC<JsonInputProps> = ({
         </div>
       </div>
 
-      {/* Content Area Container */}
-      <div className="relative flex-1 overflow-hidden">
-        {/* Vertical Guide Lines */}
-        <div
-          ref={guidesRef}
-          className="absolute inset-0 pointer-events-none overflow-hidden z-5"
-          style={{ 
-            paddingLeft: '16px',
-            paddingTop: '16px',
-          }}
-        >
-          {guideLines.map((guide, index) => (
-            <div
-              key={index}
-              className="absolute border-l border-slate-600/30"
-              style={{
-                left: `${guide.left}px`,
-                top: `${guide.top}px`,
-                height: `${guide.height}px`,
-                opacity: 0.4 - (guide.level * 0.05), // Fade deeper levels
-              }}
-            />
-          ))}
-        </div>
-
-
-        
-        {/* Text Area */}
-        <textarea
-          ref={textareaRef}
-          value={displayValue}
-          onChange={handleChange}
-          onScroll={handleScroll}
-          placeholder={placeholder || "Paste your JSON here for online formatting, validation, or to check JSON syntax..."}
-          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 text-slate-200 bg-transparent flex-1 relative z-15 ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
-          spellCheck="false"
-          readOnly={isReadOnlyMode}
-          style={{ 
-            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
-            fontSize: '14px',
-            lineHeight: '1.5',
-            background: 'transparent',
-            tabSize: 2,
-            whiteSpace: 'pre',
-            overflow: 'auto',
-            resize: 'none'
-          }}
-          aria-invalid={hasError}
-          aria-describedby={hasError ? "json-input-error" : undefined}
-          title={isReadOnlyMode ? "Expand collapsed sections to edit" : undefined}
-        />
-
-        {/* Background */}
-        <div 
-          className="absolute inset-0 pointer-events-none -z-10"
-          style={{ background: 'rgba(30, 41, 59, 0.5)' }}
-        />
-      </div>
+      {/* Text Area */}
+      <textarea
+        ref={textareaRef}
+        value={displayValue}
+        onChange={handleChange}
+        onScroll={handleScroll}
+        placeholder={placeholder || "Paste your JSON here for online formatting, validation, or to check JSON syntax..."}
+        className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 text-slate-200 bg-transparent flex-1 ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
+        spellCheck="false"
+        readOnly={isReadOnlyMode}
+        style={{ 
+          fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
+          fontSize: '14px',
+          lineHeight: '1.5',
+          background: 'rgba(30, 41, 59, 0.5)',
+          tabSize: 2,
+          whiteSpace: 'pre',
+          overflow: 'auto',
+          resize: 'none'
+        }}
+        aria-invalid={hasError}
+        aria-describedby={hasError ? "json-input-error" : undefined}
+        title={isReadOnlyMode ? "Expand collapsed sections to edit" : undefined}
+      />
     </div>
   );
 };
