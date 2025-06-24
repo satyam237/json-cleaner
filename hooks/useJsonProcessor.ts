@@ -83,6 +83,7 @@ export const useJsonProcessor = () => {
   const [formattedJson, setFormattedJson] = useState<string>('');
   const [error, setError] = useState<JsonProcessingError | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
   
   const [lastValidParsedJsonObject, setLastValidParsedJsonObject] = useState<any | null>(null);
   const [formatOfCurrentOutput, setFormatOfCurrentOutput] = useState<OutputFormat | null>(null);
@@ -223,7 +224,7 @@ export const useJsonProcessor = () => {
   }, [clearAiHighlights]);
 
   const tryAiFix = useCallback(async (jsonString: string, outputFormat: OutputFormat): Promise<string | null> => {
-    setIsLoading(true);
+    setIsAiLoading(true);
     setError(null);
     setFormattedJson('');
     setPendingAiConversionToJSON(false);
@@ -333,7 +334,7 @@ export const useJsonProcessor = () => {
         isAiError: true,
       });
     } finally {
-        setIsLoading(false);
+        setIsAiLoading(false);
     }
     return null;
   }, [clearAiHighlights]);
@@ -341,7 +342,8 @@ export const useJsonProcessor = () => {
   return { 
     formattedJson, 
     error, 
-    isLoading, 
+    isLoading,
+    isAiLoading, 
     processJson, 
     tryLocalFix, 
     tryAiFix,

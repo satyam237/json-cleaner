@@ -5,6 +5,7 @@ import { Button } from './components/Button';
 import { Alert } from './components/Alert';
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
+import { AiLoadingIndicator } from './components/AiLoadingIndicator';
 import { GithubIcon, SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
 
 // Helper to escape XML characters
@@ -58,6 +59,7 @@ const App: React.FC = () => {
     formattedJson,
     error,
     isLoading,
+    isAiLoading,
     processJson,
     tryLocalFix,
     tryAiFix,
@@ -290,7 +292,7 @@ const App: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   ringOffsetClass="focus:ring-offset-slate-700/30"
-                  disabled={isLoading}
+                  disabled={isLoading || isAiLoading}
                   aria-label="Upload file"
                   title="Upload file"
                 >
@@ -302,7 +304,7 @@ const App: React.FC = () => {
                   variant="secondary"
                   size="sm"
                   ringOffsetClass="focus:ring-offset-slate-700/30"
-                  disabled={isLoading || (!rawJson.trim() && !formattedJson.trim() && !error)}
+                  disabled={isLoading || isAiLoading || (!rawJson.trim() && !formattedJson.trim() && !error)}
                   aria-label="Clear input and output"
                   title="Clear input & output"
                 >
@@ -311,14 +313,14 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-3 items-start">
-              <Button onClick={() => forceProcessJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading} className="w-full">
+              <Button onClick={() => forceProcessJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
                 View
               </Button>
-              <Button onClick={handleLocalFix} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || !rawJson.trim()} className="w-full">
+              <Button onClick={handleLocalFix} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !rawJson.trim()} className="w-full">
                 <CogIcon className="w-4 h-4 mr-1.5" /> Basic Clean
               </Button>
               {aiFeaturesPotentiallyEnabled && (
-                <Button onClick={handleAiFix} variant="primary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || !rawJson.trim()} className="w-full">
+                <Button onClick={handleAiFix} variant="primary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !rawJson.trim()} className="w-full">
                   <SparklesIcon className="w-4 h-4 mr-1.5" /> AI Clean
                 </Button>
               )}
@@ -360,7 +362,7 @@ const App: React.FC = () => {
                   variant="secondary" 
                   ringOffsetClass="focus:ring-offset-slate-700/30" 
                   size="sm" 
-                  disabled={!formattedJson || isLoading} 
+                  disabled={!formattedJson || isLoading || isAiLoading} 
                   aria-label="Copy output" 
                   title="Copy output"
                 >
@@ -419,8 +421,12 @@ const App: React.FC = () => {
             </fieldset>
           </div>
 
-          {isLoading && <div className="flex-grow flex items-center justify-center"><LoadingSpinner /></div>}
-          {!isLoading && error && (
+          {(isLoading || isAiLoading) && (
+            <div className="flex-grow flex items-center justify-center">
+              {isAiLoading ? <AiLoadingIndicator /> : <LoadingSpinner />}
+            </div>
+          )}
+          {!isLoading && !isAiLoading && error && (
             <div className="p-4">
               <Alert type={error.isAiError ? "warning" : "error"} title={error.title}>
                 {error.message}
@@ -428,7 +434,7 @@ const App: React.FC = () => {
               </Alert>
             </div>
           )}
-          {!isLoading && !error && formattedJson && (
+          {!isLoading && !isAiLoading && !error && formattedJson && (
             <JsonOutput 
               data={formattedJson} 
               className={`flex-grow w-full h-full ${textAreaMinHeight}`}
@@ -436,7 +442,7 @@ const App: React.FC = () => {
               showAiHighlights={showAiHighlights}
             />
           )}
-          {!isLoading && !error && !formattedJson && (
+          {!isLoading && !isAiLoading && !error && !formattedJson && (
              <div className={`flex-grow flex items-center justify-center text-slate-400 ${textAreaMinHeight}`}>
                 <p>{rawJson.trim() ? "Output will appear here once processed." : "Output will appear here."}</p>
              </div>
