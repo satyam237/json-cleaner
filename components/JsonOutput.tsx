@@ -45,9 +45,9 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
       
       if (change) {
         const highlightClass = 
-          change.type === 'added' ? 'bg-green-500/30 border-l-4 border-green-400 px-1 -mx-1' :
-          change.type === 'modified' ? 'bg-yellow-500/30 border-l-4 border-yellow-400 px-1 -mx-1' :
-          'bg-red-500/30 border-l-4 border-red-400 px-1 -mx-1';
+          change.type === 'added' ? 'bg-green-500/15 border-l-2 border-green-400/60 px-1 -mx-1' :
+          change.type === 'modified' ? 'bg-yellow-500/15 border-l-2 border-yellow-400/60 px-1 -mx-1' :
+          'bg-red-500/15 border-l-2 border-red-400/60 px-1 -mx-1';
         
         return `<div class="${highlightClass} leading-6">${escapedLine || ' '}</div>`;
       }

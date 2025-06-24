@@ -327,7 +327,7 @@ const App: React.FC = () => {
             </div>
             {showAiHighlights && aiChanges.length > 0 && (
               <div className="mt-2 p-2 bg-slate-600/30 rounded text-xs text-slate-300">
-                <span className="font-medium">AI Content Changes:</span>
+                <span className="font-medium">AI Changes:</span>
                 <span className="ml-2 inline-flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded mr-1"></span>Added
                 </span>
@@ -337,7 +337,7 @@ const App: React.FC = () => {
                 <span className="ml-2 inline-flex items-center">
                   <span className="w-2 h-2 bg-red-400 rounded mr-1"></span>Removed
                 </span>
-                <span className="ml-3 text-slate-400">(content changes only, not formatting)</span>
+                <span className="ml-3 text-slate-400">(lines with actual content changes)</span>
               </div>
             )}
           </div>

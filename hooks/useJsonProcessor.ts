@@ -11,140 +11,38 @@ export interface AiChange {
   content: string;
 }
 
-// Smart diff function that ignores formatting and focuses on actual content changes
+// Simple and accurate diff function that compares actual content changes
 function calculateChanges(original: string, modified: string): AiChange[] {
-  // First, try to normalize both inputs to compare their actual content
-  const normalizeContent = (text: string): string[] => {
-    try {
-      // If it's valid JSON, parse and stringify to normalize formatting
-      const parsed = JSON.parse(text);
-      return JSON.stringify(parsed, null, 2).split('\n');
-    } catch (e) {
-      // If not valid JSON, just split by lines and normalize whitespace
-      return text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    }
-  };
-
-  const originalNormalized = normalizeContent(original);
-  const modifiedNormalized = normalizeContent(modified);
-
-  // If the normalized content is identical, no meaningful changes
-  if (JSON.stringify(originalNormalized) === JSON.stringify(modifiedNormalized)) {
-    return [];
-  }
-
-  // If we get here, there are actual content differences
-  // Now do a much more sophisticated comparison
-  return findMeaningfulDifferences(original, modified);
-}
-
-// Find only meaningful differences, ignoring pure formatting
-function findMeaningfulDifferences(original: string, modified: string): AiChange[] {
-  const changes: AiChange[] = [];
-  
-  // Extract actual data content from each string
-  const extractDataContent = (text: string): Map<string, any> => {
-    const contentMap = new Map();
-    try {
-      const parsed = JSON.parse(text);
-      extractDataFromObject(parsed, '', contentMap);
-    } catch (e) {
-      // For non-JSON, extract key-value-like patterns
-      const lines = text.split('\n');
-      lines.forEach((line, index) => {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.match(/^[{}\[\],]*$/)) {
-          // Extract meaningful content (key-value pairs, values, etc.)
-          const keyValueMatch = trimmed.match(/['"]*([^'":\s]+)['"]*\s*:\s*(.+)/);
-          if (keyValueMatch) {
-            contentMap.set(keyValueMatch[1], keyValueMatch[2].replace(/[,\s]*$/, ''));
-          } else if (trimmed.length > 1) {
-            contentMap.set(`line_${index}`, trimmed);
-          }
-        }
-      });
-    }
-    return contentMap;
-  };
-
-  const extractDataFromObject = (obj: any, path: string, map: Map<string, any>) => {
-    if (Array.isArray(obj)) {
-      obj.forEach((item, index) => {
-        extractDataFromObject(item, `${path}[${index}]`, map);
-      });
-    } else if (typeof obj === 'object' && obj !== null) {
-      Object.keys(obj).forEach(key => {
-        const newPath = path ? `${path}.${key}` : key;
-        extractDataFromObject(obj[key], newPath, map);
-      });
-    } else {
-      map.set(path, obj);
-    }
-  };
-
-  const originalData = extractDataContent(original);
-  const modifiedData = extractDataContent(modified);
-
-  // Compare the actual data content
-  const allKeys = new Set([...originalData.keys(), ...modifiedData.keys()]);
-  
-  // Only highlight if there are actual data differences
-  if (allKeys.size === 0) return [];
-  
-  let hasRealDifferences = false;
-  for (const key of allKeys) {
-    const originalValue = originalData.get(key);
-    const modifiedValue = modifiedData.get(key);
-    
-    if (originalValue !== modifiedValue) {
-      hasRealDifferences = true;
-      break;
-    }
-  }
-
-  // If no real differences found, don't highlight anything
-  if (!hasRealDifferences) {
-    return [];
-  }
-
-  // Only highlight lines that contain actual data changes
-  const modifiedLines = modified.split('\n');
   const originalLines = original.split('\n');
+  const modifiedLines = modified.split('\n');
+  const changes: AiChange[] = [];
 
-  // Find lines that contain changed data
-  for (const key of allKeys) {
-    const originalValue = originalData.get(key);
-    const modifiedValue = modifiedData.get(key);
+  // Normalize a line for comparison (remove leading/trailing whitespace but keep content)
+  const normalizeForComparison = (line: string): string => {
+    return line.trim();
+  };
+
+  // Simple line-by-line comparison
+  const maxLines = Math.max(originalLines.length, modifiedLines.length);
+
+  for (let i = 0; i < maxLines; i++) {
+    const originalLine = originalLines[i] || '';
+    const modifiedLine = modifiedLines[i] || '';
     
-    if (originalValue !== modifiedValue) {
-      // Find the line in the modified output that contains this change
-      for (let i = 0; i < modifiedLines.length; i++) {
-        const line = modifiedLines[i];
-        const cleanLine = line.trim().replace(/[,\s]*$/, '');
-        
-        // Check if this line contains the changed key or value
-        if (modifiedValue !== undefined && 
-            (line.includes(String(modifiedValue)) || 
-             (typeof key === 'string' && line.includes(key)))) {
-          
-          // Determine the type of change
-          let changeType: 'added' | 'modified' | 'removed' = 'modified';
-          if (originalValue === undefined) {
-            changeType = 'added';
-          } else if (modifiedValue === undefined) {
-            changeType = 'removed';
-          }
-          
-          // Only add if we don't already have this line marked
-          if (!changes.some(change => change.line === i)) {
-            changes.push({ 
-              line: i, 
-              type: changeType, 
-              content: line 
-            });
-          }
-          break;
-        }
+    const originalNormalized = normalizeForComparison(originalLine);
+    const modifiedNormalized = normalizeForComparison(modifiedLine);
+
+    // Only highlight if the actual content (not just whitespace) is different
+    if (originalNormalized !== modifiedNormalized) {
+      if (originalNormalized === '' && modifiedNormalized !== '') {
+        // Line was added
+        changes.push({ line: i, type: 'added', content: modifiedLine });
+      } else if (originalNormalized !== '' && modifiedNormalized === '') {
+        // Line was removed
+        changes.push({ line: i, type: 'removed', content: originalLine });
+      } else if (originalNormalized !== '' && modifiedNormalized !== '') {
+        // Line was modified
+        changes.push({ line: i, type: 'modified', content: modifiedLine });
       }
     }
   }
@@ -374,49 +272,10 @@ export const useJsonProcessor = () => {
         setFormattedJson(aiResult.correctedText);
         setFormatOfCurrentOutput(outputFormat); 
         
-        // Calculate changes between what normal processing would produce vs AI output
-        let expectedOutput = '';
-        let shouldCalculateChanges = true;
-        
-        try {
-          // Try to parse the original input to see if it was valid JSON
-          const parsed = JSON.parse(jsonString);
-          
-          // If original was valid JSON, check if AI made any structural changes
-          let aiParsed: any = null;
-          try {
-            aiParsed = JSON.parse(aiResult.correctedText);
-            
-            // Compare the actual data structures
-            const originalStringified = JSON.stringify(parsed);
-            const aiStringified = JSON.stringify(aiParsed);
-            
-            if (originalStringified === aiStringified) {
-              // No structural changes, just formatting - don't highlight
-              shouldCalculateChanges = false;
-            } else {
-              // There are structural changes - compare against original input
-              expectedOutput = jsonString;
-            }
-          } catch (e) {
-            // AI output is not valid JSON - compare against original
-            expectedOutput = jsonString;
-          }
-        } catch (e) {
-          // Original input was invalid JSON - compare against cleaned version
-          // This will show what AI fixed from the malformed input
-          expectedOutput = jsonString;
-        }
-        
-        if (shouldCalculateChanges) {
-          const changes = calculateChanges(expectedOutput, aiResult.correctedText);
-          setAiChanges(changes);
-          setShowAiHighlights(changes.length > 0);
-        } else {
-          // No meaningful changes to highlight
-          setAiChanges([]);
-          setShowAiHighlights(false);
-        }
+        // Calculate changes by comparing original input vs AI output directly
+        const changes = calculateChanges(jsonString, aiResult.correctedText);
+        setAiChanges(changes);
+        setShowAiHighlights(changes.length > 0);
         
         if (outputFormat === 'json') {
           try {
