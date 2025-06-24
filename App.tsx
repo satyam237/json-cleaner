@@ -3,7 +3,7 @@ import { JsonInput } from './components/JsonInput';
 import { JsonOutput } from './components/JsonOutput';
 import { Button } from './components/Button';
 import { Alert } from './components/Alert';
-import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString } from './hooks/useJsonProcessor';
+import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { GithubIcon, SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, EmailIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
 
@@ -64,6 +64,10 @@ const App: React.FC = () => {
     pendingAiConversionToJSON,
     clearPendingAiConversion,
     forceProcessJson,
+    clearAiHighlights,
+    aiChanges,
+    showAiHighlights,
+    originalTextBeforeAi,
   } = useJsonProcessor();
 
   const handleInputChange = useCallback((value: string) => {
@@ -322,6 +326,21 @@ const App: React.FC = () => {
                 </Button>
               )}
             </div>
+            {showAiHighlights && aiChanges.length > 0 && (
+              <div className="mt-2 p-2 bg-slate-600/30 rounded text-xs text-slate-300">
+                <span className="font-medium">AI Changes:</span>
+                <span className="ml-2 inline-flex items-center">
+                  <span className="w-2 h-2 bg-green-400 rounded mr-1"></span>Added
+                </span>
+                <span className="ml-2 inline-flex items-center">
+                  <span className="w-2 h-2 bg-yellow-400 rounded mr-1"></span>Modified
+                </span>
+                <span className="ml-2 inline-flex items-center">
+                  <span className="w-2 h-2 bg-red-400 rounded mr-1"></span>Removed
+                </span>
+                <span className="ml-3 text-slate-400">(highlights clear when you edit)</span>
+              </div>
+            )}
           </div>
           <JsonInput
             value={rawJson}
@@ -329,6 +348,9 @@ const App: React.FC = () => {
             placeholder="Paste your JSON for formatting, validation, or to check JSON online..."
             hasError={!!error}
             className={`flex-grow w-full h-full ${textAreaMinHeight}`}
+            aiChanges={aiChanges}
+            showAiHighlights={showAiHighlights}
+            onClearHighlights={clearAiHighlights}
           />
         </div>
 

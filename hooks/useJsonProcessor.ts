@@ -5,6 +5,38 @@ import { JsonProcessingError } from '../types';
 
 export type OutputFormat = 'json' | 'python';
 
+export interface AiChange {
+  line: number;
+  type: 'added' | 'modified' | 'removed';
+  content: string;
+}
+
+// Simple diff function to find changed lines
+function calculateChanges(original: string, modified: string): AiChange[] {
+  const originalLines = original.split('\n');
+  const modifiedLines = modified.split('\n');
+  const changes: AiChange[] = [];
+  
+  const maxLines = Math.max(originalLines.length, modifiedLines.length);
+  
+  for (let i = 0; i < maxLines; i++) {
+    const originalLine = originalLines[i] || '';
+    const modifiedLine = modifiedLines[i] || '';
+    
+    if (originalLine !== modifiedLine) {
+      if (originalLine && modifiedLine) {
+        changes.push({ line: i, type: 'modified', content: modifiedLine });
+      } else if (modifiedLine) {
+        changes.push({ line: i, type: 'added', content: modifiedLine });
+      } else if (originalLine) {
+        changes.push({ line: i, type: 'removed', content: originalLine });
+      }
+    }
+  }
+  
+  return changes;
+}
+
 export function formatJsObjectToPythonString(obj: any, indentLevel = 0, indentUnit = "  "): string {
   const currentIndent = indentUnit.repeat(indentLevel);
   const nextIndent = indentUnit.repeat(indentLevel + 1);
@@ -48,12 +80,19 @@ export const useJsonProcessor = () => {
   
   const [lastAiInputForPython, setLastAiInputForPython] = useState<string | null>(null);
   const [pendingAiConversionToJSON, setPendingAiConversionToJSON] = useState<boolean>(false);
-
+  
+  // AI highlights state
+  const [aiChanges, setAiChanges] = useState<AiChange[]>([]);
+  const [showAiHighlights, setShowAiHighlights] = useState<boolean>(false);
+  const [originalTextBeforeAi, setOriginalTextBeforeAi] = useState<string>('');
 
   const processJson = useCallback((jsonString: string, targetOutputFormat: OutputFormat) => {
     setIsLoading(true);
     setError(null);
     setPendingAiConversionToJSON(false);
+    
+    // Clear AI highlights when processing new input
+    clearAiHighlights();
 
     if (lastValidParsedJsonObject &&
         (targetOutputFormat !== formatOfCurrentOutput ||
@@ -114,7 +153,7 @@ export const useJsonProcessor = () => {
         setIsLoading(false);
       }
     }
-  }, [lastValidParsedJsonObject, formatOfCurrentOutput, lastAiInputForPython, rawJsonWasSourceOfLVPJO]);
+  }, [lastValidParsedJsonObject, formatOfCurrentOutput, lastAiInputForPython, rawJsonWasSourceOfLVPJO, clearAiHighlights]);
 
   const clearPendingAiConversion = useCallback(() => {
     setPendingAiConversionToJSON(false);
@@ -127,16 +166,22 @@ export const useJsonProcessor = () => {
     setFormatOfCurrentOutput(null);
     setLastAiInputForPython(null);
     
+    // Clear AI highlights
+    clearAiHighlights();
+    
     // Now process with fresh state
     processJson(jsonString, targetOutputFormat);
-  }, [processJson]);
+  }, [processJson, clearAiHighlights]);
 
   const tryLocalFix = useCallback(async (jsonString: string): Promise<string> => {
     setIsLoading(true);
     setError(null);
     setPendingAiConversionToJSON(false);
     setLastAiInputForPython(null); 
-    setRawJsonWasSourceOfLVPJO(false); 
+    setRawJsonWasSourceOfLVPJO(false);
+    
+    // Clear AI highlights since we're doing local cleaning
+    clearAiHighlights();
 
     let cleaned = jsonString;
     cleaned = cleaned.replace(/\bTrue\b/g, 'true');
@@ -158,13 +203,16 @@ export const useJsonProcessor = () => {
     
     setIsLoading(false); 
     return cleaned;
-  }, []);
+  }, [clearAiHighlights]);
 
   const tryAiFix = useCallback(async (jsonString: string, outputFormat: OutputFormat): Promise<string | null> => {
     setIsLoading(true);
     setError(null);
     setFormattedJson('');
-    setPendingAiConversionToJSON(false); 
+    setPendingAiConversionToJSON(false);
+    
+    // Store original text for highlighting changes
+    setOriginalTextBeforeAi(jsonString);
 
     try {
       const proxyResponse = await fetch('/api/gemini-ai', {
@@ -195,6 +243,7 @@ export const useJsonProcessor = () => {
         setRawJsonWasSourceOfLVPJO(false);
         setFormatOfCurrentOutput(null);
         setLastAiInputForPython(null);
+        clearAiHighlights();
         return null; // Indicate failure
       }
 
@@ -202,6 +251,12 @@ export const useJsonProcessor = () => {
       if (aiResult.correctedText) {
         setFormattedJson(aiResult.correctedText);
         setFormatOfCurrentOutput(outputFormat); 
+        
+        // Calculate and set AI changes for highlighting
+        const changes = calculateChanges(jsonString, aiResult.correctedText);
+        setAiChanges(changes);
+        setShowAiHighlights(changes.length > 0);
+        
         if (outputFormat === 'json') {
           try {
             const parsedAiJson = JSON.parse(aiResult.correctedText);
@@ -232,6 +287,7 @@ export const useJsonProcessor = () => {
         setRawJsonWasSourceOfLVPJO(false);
         setFormatOfCurrentOutput(null);
         setLastAiInputForPython(null);
+        clearAiHighlights();
         setError({
           title: aiResult.title || `AI Could Not Process Input for ${outputFormat.toUpperCase()} Format`,
           message: aiResult.error,
@@ -243,6 +299,7 @@ export const useJsonProcessor = () => {
         setRawJsonWasSourceOfLVPJO(false);
         setFormatOfCurrentOutput(null);
         setLastAiInputForPython(null);
+        clearAiHighlights();
         throw new Error("Unexpected response structure from AI proxy. Expected 'correctedText' or 'error' key.");
       }
     } catch (e: any) {
@@ -251,6 +308,7 @@ export const useJsonProcessor = () => {
       setRawJsonWasSourceOfLVPJO(false);
       setFormatOfCurrentOutput(null);
       setLastAiInputForPython(null);
+      clearAiHighlights();
       setError({
         title: "AI Fix Failed",
         message: e.message || "An error occurred while communicating with the AI service proxy.",
@@ -261,7 +319,13 @@ export const useJsonProcessor = () => {
         setIsLoading(false);
     }
     return null;
-  }, []); 
+  }, [clearAiHighlights]);
+
+  const clearAiHighlights = useCallback(() => {
+    setAiChanges([]);
+    setShowAiHighlights(false);
+    setOriginalTextBeforeAi('');
+  }, []);
 
   return { 
     formattedJson, 
@@ -272,6 +336,10 @@ export const useJsonProcessor = () => {
     tryAiFix,
     pendingAiConversionToJSON,
     clearPendingAiConversion,
-    forceProcessJson
+    forceProcessJson,
+    clearAiHighlights,
+    aiChanges,
+    showAiHighlights,
+    originalTextBeforeAi
   };
 };
