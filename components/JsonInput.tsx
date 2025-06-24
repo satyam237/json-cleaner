@@ -352,11 +352,12 @@ export const JsonInput: React.FC<JsonInputProps> = ({
         {/* Syntax Highlighting Layer */}
         <div
           ref={highlightRef}
-          className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-10"
+          className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre z-10"
           style={{ 
             fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
             fontSize: '14px',
             lineHeight: '1.5',
+            color: '#e2e8f0', // Default slate-200 color for unhighlighted text
           }}
           dangerouslySetInnerHTML={{ __html: highlightedContent }}
         />
