@@ -434,19 +434,6 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-6 text-sm text-center bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40 max-w-3xl mx-auto">
-        {aiFeaturesPotentiallyEnabled ? (
-          <div className="p-3 bg-green-800/50 text-green-300 border border-green-700/70 rounded-md">
-            Note: AI Cleaning feature is active. It relies on a backend proxy for secure API key usage. 
-            Ensure the <code className="bg-green-900/70 px-1 rounded">API_KEY</code> is set in your Vercel project environment variables.
-          </div>
-        ) : (
-           <div className="p-3 bg-yellow-800/50 text-yellow-300 border border-yellow-700/70 rounded-md">
-             Note: AI Cleaning features might be disabled if not configured on the backend.
-           </div>
-        )}
-      </div>
-
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
         <p className="text-xs text-slate-500">Powered by Google Gemini API.</p>
       </footer>
