@@ -86,6 +86,13 @@ export const useJsonProcessor = () => {
   const [showAiHighlights, setShowAiHighlights] = useState<boolean>(false);
   const [originalTextBeforeAi, setOriginalTextBeforeAi] = useState<string>('');
 
+  // Define clearAiHighlights early so it can be used in dependency arrays
+  const clearAiHighlights = useCallback(() => {
+    setAiChanges([]);
+    setShowAiHighlights(false);
+    setOriginalTextBeforeAi('');
+  }, []);
+
   const processJson = useCallback((jsonString: string, targetOutputFormat: OutputFormat) => {
     setIsLoading(true);
     setError(null);
@@ -320,12 +327,6 @@ export const useJsonProcessor = () => {
     }
     return null;
   }, [clearAiHighlights]);
-
-  const clearAiHighlights = useCallback(() => {
-    setAiChanges([]);
-    setShowAiHighlights(false);
-    setOriginalTextBeforeAi('');
-  }, []);
 
   return { 
     formattedJson, 

@@ -5,7 +5,7 @@ import { Button } from './components/Button';
 import { Alert } from './components/Alert';
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { GithubIcon, SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, EmailIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
+import { GithubIcon, SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
 
 // Helper to escape XML characters
 const escapeXml = (unsafe: string): string =>
@@ -67,7 +67,6 @@ const App: React.FC = () => {
     clearAiHighlights,
     aiChanges,
     showAiHighlights,
-    originalTextBeforeAi,
   } = useJsonProcessor();
 
   const handleInputChange = useCallback((value: string) => {
