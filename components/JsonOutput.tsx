@@ -26,20 +26,22 @@ const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 const highlightJsonSyntax = (text: string): string => {
   if (!text.trim()) return text;
 
-  // Escape HTML entities first
-  let highlighted = text
+  // Function to safely escape HTML in capture groups
+  const escapeHtml = (str: string) => str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
+  let highlighted = text;
+
   // Highlight strings (both single and double quoted) - blue-green
   highlighted = highlighted.replace(
     /"([^"\\]*(\\.[^"\\]*)*)"/g,
-    '<span style="color: #7dd3fc;">\"$1\"</span>'
+    (match, content) => `<span style="color: #7dd3fc;">"${escapeHtml(content)}"</span>`
   );
   highlighted = highlighted.replace(
     /'([^'\\]*(\\.[^'\\]*)*)'/g,
-    '<span style="color: #7dd3fc;">\'$1\'</span>'
+    (match, content) => `<span style="color: #7dd3fc;">'${escapeHtml(content)}'</span>`
   );
 
   // Highlight numbers - light orange
