@@ -9,4 +9,17 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* IDE-like editor styles */
+.json-editor-line {
+  min-height: 24px; /* 1.5 line-height * 16px font-size */
+  line-height: 1.5;
+}
+
+/* Ensure consistent spacing in code areas */
+pre, code {
+  tab-size: 2;
+  -moz-tab-size: 2;
+  -o-tab-size: 2;
+}
+
 /* Additional base styles can be added here if needed */ 
