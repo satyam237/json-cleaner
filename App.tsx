@@ -436,24 +436,40 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <div className="mt-8 mb-4 text-slate-300">
-        <h3 className="text-lg font-semibold text-center mb-3 text-slate-100">About Cleaning Functions</h3>
+      <section className="mt-8 mb-4 text-slate-300" aria-labelledby="features-heading">
+        <h3 id="features-heading" className="text-lg font-semibold text-center mb-3 text-slate-100">Free Online JSON Formatter & Validator Features</h3>
         <div className="grid md:grid-cols-2 gap-x-6 gap-y-4 max-w-3xl mx-auto">
           <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
-            <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><CogIcon className="w-4 h-4 mr-2 text-slate-400"/>Basic Clean</h4>
-            <p className="text-xs text-slate-400">Local fixes for common syntax issues like Python's True/False/None, missing quotes around keys, single-quoted strings, and trailing commas. Fast and offline.</p>
+            <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><CogIcon className="w-4 h-4 mr-2 text-slate-400"/>JSON Basic Clean</h4>
+            <p className="text-xs text-slate-400">Instant JSON formatter and validator with local fixes for common syntax issues like Python's True/False/None, missing quotes around keys, single-quoted strings, and trailing commas. Fast and offline JSON cleaning.</p>
           </div>
           {aiFeaturesPotentiallyEnabled && (
             <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
-              <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><SparklesIcon className="w-4 h-4 mr-2 text-indigo-400"/>AI Clean</h4>
-              <p className="text-xs text-slate-400">Advanced AI-powered correction for more complex errors and direct conversion to your selected output format (JSON or Python).</p>
+              <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><SparklesIcon className="w-4 h-4 mr-2 text-indigo-400"/>AI JSON Cleaner</h4>
+              <p className="text-xs text-slate-400">Advanced AI-powered JSON error correction for complex malformed data. Automatically format JSON, validate syntax, and convert between JSON and Python dictionary formats with intelligent error detection.</p>
             </div>
           )}
         </div>
-      </div>
+        
+        <div className="mt-6 text-center max-w-4xl mx-auto">
+          <h4 className="text-md font-medium text-slate-200 mb-2">Why Choose Our JSON Formatter Tool?</h4>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Format JSON online instantly with our free JSON beautifier and validator. Clean malformed JSON data, validate JSON syntax, and convert between JSON and Python formats. 
+            Perfect JSON tool for developers, data analysts, and anyone working with JSON files. No signup required - start formatting JSON now!
+          </p>
+        </div>
+      </section>
 
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
-        <p className="text-xs text-slate-500">Powered by Google Gemini API.</p>
+        <div className="mb-3">
+          <p className="text-sm text-slate-300 mb-1">
+            <strong>JSON Buddy</strong> - Free Online JSON Formatter, Validator & Cleaner
+          </p>
+          <p className="text-xs text-slate-400">
+            Format JSON • Validate JSON • Clean JSON • Beautify JSON • Python to JSON Converter
+          </p>
+        </div>
+        <p className="text-xs text-slate-500">AI-powered by Google Gemini API • Made with ❤️ by Satyam Jadhav</p>
       </footer>
     </div>
   );
