@@ -270,7 +270,7 @@ const App: React.FC = () => {
           JSON Buddy
         </h1>
         <a
-          href="https://github.com/google/ai-on-device" // Or your specific repo: https://www.github.com/satyam237/
+          href="https://github.com/satyam237/json-cleaner"
           target="_blank"
           rel="noopener noreferrer"
           className="text-slate-400 hover:text-slate-200 transition-colors"
