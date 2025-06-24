@@ -1,9 +1,1 @@
-{
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://aijsonformatter.site/$1",
-      "permanent": true
-    }
-  ]
-} 
+{} 
