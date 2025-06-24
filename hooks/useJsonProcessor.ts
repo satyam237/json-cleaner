@@ -11,42 +11,39 @@ export interface AiChange {
   content: string;
 }
 
-// Simple and accurate diff function that compares actual content changes
+// Ultra-simple diff: only highlight if actual content was added/changed (ignoring all formatting)
 function calculateChanges(original: string, modified: string): AiChange[] {
-  const originalLines = original.split('\n');
-  const modifiedLines = modified.split('\n');
+  // Remove ALL whitespace to compare pure content
+  const cleanOriginal = original.replace(/\s+/g, '');
+  const cleanModified = modified.replace(/\s+/g, '');
+  
+  // If the content is identical after removing formatting, no changes to highlight
+  if (cleanOriginal === cleanModified) {
+    return [];
+  }
+  
+  // Find what content was actually added to the modified version
   const changes: AiChange[] = [];
-
-  // Normalize a line for comparison (remove leading/trailing whitespace but keep content)
-  const normalizeForComparison = (line: string): string => {
-    return line.trim();
-  };
-
-  // Simple line-by-line comparison
-  const maxLines = Math.max(originalLines.length, modifiedLines.length);
-
-  for (let i = 0; i < maxLines; i++) {
-    const originalLine = originalLines[i] || '';
-    const modifiedLine = modifiedLines[i] || '';
+  const modifiedLines = modified.split('\n');
+  
+  // Look for completely new content that wasn't in the original at all
+  for (let lineIndex = 0; lineIndex < modifiedLines.length; lineIndex++) {
+    const line = modifiedLines[lineIndex];
+    const trimmedLine = line.trim();
     
-    const originalNormalized = normalizeForComparison(originalLine);
-    const modifiedNormalized = normalizeForComparison(modifiedLine);
-
-    // Only highlight if the actual content (not just whitespace) is different
-    if (originalNormalized !== modifiedNormalized) {
-      if (originalNormalized === '' && modifiedNormalized !== '') {
-        // Line was added
-        changes.push({ line: i, type: 'added', content: modifiedLine });
-      } else if (originalNormalized !== '' && modifiedNormalized === '') {
-        // Line was removed
-        changes.push({ line: i, type: 'removed', content: originalLine });
-      } else if (originalNormalized !== '' && modifiedNormalized !== '') {
-        // Line was modified
-        changes.push({ line: i, type: 'modified', content: modifiedLine });
-      }
+    // Skip empty lines
+    if (!trimmedLine) continue;
+    
+    // Check if this line contains content that's completely new
+    // We'll remove the formatting and see if the core content exists in original
+    const lineContent = trimmedLine.replace(/\s+/g, '');
+    
+    // If this line's content doesn't exist anywhere in the original, it's new
+    if (lineContent && !cleanOriginal.includes(lineContent)) {
+      changes.push({ line: lineIndex, type: 'added', content: line });
     }
   }
-
+  
   return changes;
 }
 
