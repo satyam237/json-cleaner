@@ -1,4 +1,4 @@
-# aijsonformatter: AI-Powered JSON Formatter & Validator
+# 🎯 **aijsonformatter** - AI-Powered JSON Formatter & Cleaner
 
 **Live at: [aijsonformatter.site](https://aijsonformatter.site)**
 
@@ -6,93 +6,49 @@ A beautiful, intelligent web application that makes working with JSON data effor
 
 ---
 
-## ✨ Key Features
+## ✨ **Key Features**
 
-### 🎯 **Smart JSON Processing**
-- **Instant Validation & Formatting**: Paste any JSON and see it beautifully formatted with syntax highlighting and line numbers
-- **Python-Style Support**: Automatically converts Python dict/list syntax (True/False/None, single quotes) to valid JSON
-- **Real-time Processing**: See results as you type with intelligent debouncing
+### 🔧 **JSON Processing**
+- **Instant Formatting**: Beautiful JSON with proper indentation and syntax highlighting
+- **Smart Validation**: Real-time error detection with helpful suggestions
+- **Python Output**: Convert JSON to Python dictionary/list syntax
+- **File Support**: Upload JSON files directly or download results
 
-### 🤖 **AI-Powered Error Correction**
-- **Basic Clean**: Lightning-fast local fixes for common syntax issues (Python booleans, missing quotes, trailing commas)
-- **AI Clean**: Advanced AI correction powered by Google Gemini for complex errors and malformed data
-- **Smart Highlighting**: Visual indicators show exactly what the AI changed in your data
+### 🤖 **AI-Powered Cleaning**
+- **Basic Clean**: Fixes common JSON issues (quotes, trailing commas, Python literals)
+- **AI Clean**: Advanced error correction using Google Gemini AI
+- **Smart Error Recovery**: Handles malformed data with intelligent suggestions
+- **Multi-format Support**: Works with both JSON and Python-like structures
 
-### 📁 **File Management**
-- **Multi-Format Support**: Upload .json, .txt, .py, .md files
-- **Flexible Downloads**: Save your output as JSON, Python, XML, or plain text
-- **Drag & Drop**: Easy file handling with intuitive interface
+### 📊 **Advanced Features**
+- **Real-time Statistics**: Character count, lines, file size, and compression ratio
+- **Collapsible Sections**: Expand/collapse JSON objects and arrays with arrow controls
+- **Keyboard Shortcuts**: Power-user shortcuts for common actions
+- **User Feedback**: Built-in satisfaction tracking
+- **Google Analytics**: Usage tracking and performance monitoring
 
-### 🎨 **Professional Interface**
-- **Dual-Pane Editor**: Side-by-side input and output with synchronized line numbers
-- **Multiple Output Formats**: Switch between JSON and Python dict/list formats instantly
-- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
-- **Dark Theme**: Easy on the eyes for extended use
-
----
-
-## 🚀 How to Use
-
-### **Basic Usage**
-1. **Input Your Data**: Paste or upload your JSON, Python data, or malformed text
-2. **Choose Format**: Select between Standard JSON or Python dict/list output
-3. **Process**: Use "View" for basic formatting, "Basic Clean" for quick fixes
-4. **Download or Copy**: Get your formatted data in your preferred format
-
-### **Error Correction**
-- **Basic Clean**: Perfect for fixing common issues like Python True/False/None values, unquoted keys, or trailing commas
-- **AI Clean**: Use when dealing with severely malformed data or complex conversion needs
-- **Smart Recovery**: AI can often fix data that seems completely broken
-
-### **File Operations**
-- **Upload**: Click the upload button or drag files directly into the interface
-- **Download**: Choose from multiple output formats (JSON, Python, XML, TXT)
-- **Copy**: One-click copying to clipboard for quick sharing
+### 🎨 **User Experience**
+- **Dark Theme**: Professional dark interface optimized for JSON viewing
+- **Responsive Design**: Works perfectly on desktop and mobile
+- **Line Numbers**: IDE-like experience with synchronized scrolling
+- **Syntax Highlighting**: Clear visual distinction for different JSON elements
+- **Copy & Download**: One-click copy to clipboard or download as file
 
 ---
 
-## 💡 Perfect For
+## 🚀 **How to Use**
 
-### **Developers**
-- Debugging API responses and configuration files
-- Converting between JSON and Python data formats
-- Validating and beautifying JSON in development workflows
+1. **Input**: Paste your JSON data into the left panel or upload a file
+2. **Collapse/Expand**: Click the arrow icons next to line numbers to fold JSON sections
+3. **Format**: Choose JSON or Python output format
+4. **Clean**: Use "Basic Clean" for simple fixes or "AI Clean" for complex issues
+5. **Export**: Copy to clipboard or download the formatted result
 
-### **Data Analysts**
-- Cleaning and formatting datasets from various sources
-- Converting Python dictionaries to JSON for analysis tools
-- Fixing malformed data exports
-
-### **Content Managers**
-- Formatting JSON for CMS configurations
-- Validating structured data for SEO and web applications
-- Converting data between different content management systems
-
-### **Students & Educators**
-- Learning JSON syntax and structure
-- Understanding data format differences
-- Practicing with real-world data scenarios
-
----
-
-## 🎯 Key Benefits
-
-- **No Installation Required**: Works directly in your browser
-- **Privacy-First**: All basic processing happens locally on your device
-- **Lightning Fast**: Instant results with smart caching
-- **Mobile-Friendly**: Full functionality on any device
-- **Professional Grade**: Built for real-world use cases
-
----
-
-## 🤖 AI Technology
-
-aijsonformatter leverages Google's Gemini AI to provide intelligent error correction that goes beyond simple syntax fixes. The AI can:
-
-- Understand context and intent in malformed data
-- Fix complex structural issues automatically
-- Convert between different data representation formats
-- Provide helpful error messages and suggestions
+### ⌨️ **Keyboard Shortcuts**
+- `Ctrl+Enter`: Format JSON
+- `Ctrl+Shift+C`: Copy output to clipboard
+- `Ctrl+S`: Download JSON file
+- `Escape`: Clear all content
 
 ---
 
@@ -100,19 +56,36 @@ aijsonformatter leverages Google's Gemini AI to provide intelligent error correc
 
 **Visit**: [aijsonformatter.site](https://aijsonformatter.site)
 
-Start formatting and fixing your JSON data instantly - no signup or installation required.
+Perfect for developers, data scientists, and anyone working with JSON data who needs reliable formatting and validation tools.
 
 ---
 
-## 👨‍💻 Created By
+## 🛠 **Development**
 
-**Satyam Jadhav**  
-Full-Stack Developer & AI Enthusiast
+Built with modern web technologies:
+- **React 18** with TypeScript
+- **Tailwind CSS** for styling  
+- **Google Gemini AI** for intelligent error correction
+- **Vite** for fast development and building
+- **Vercel** for deployment and serverless functions
 
-- 🌐 **Website**: [aijsonformatter.site](https://aijsonformatter.site)
-- 💼 **GitHub**: [github.com/satyam237](https://github.com/satyam237)  
-- 📧 **Email**: satyam2373@gmail.com
+### Local Development
+```bash
+npm install
+npm run dev
+```
+
+### Build for Production
+```bash
+npm run build
+```
 
 ---
 
-*aijsonformatter - Making JSON simple, one format at a time.*
+## 📝 **License**
+
+MIT License - feel free to use this project for your own needs.
+
+---
+
+**Made with ❤️ for the developer community**

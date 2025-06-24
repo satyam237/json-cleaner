@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { AiChange } from '../hooks/useJsonProcessor';
+import { parseJsonStructure, toggleSection, getCollapsedContent, CollapsibleSection } from '../lib/jsonCollapse';
 
 interface JsonOutputProps {
   data: string;
@@ -7,6 +8,19 @@ interface JsonOutputProps {
   aiChanges?: AiChange[];
   showAiHighlights?: boolean;
 }
+
+// Chevron icons for collapse/expand
+const ChevronDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+  </svg>
+);
+
+const ChevronRightIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+  </svg>
+);
 
 export const JsonOutput: React.FC<JsonOutputProps> = ({ 
   data, 
@@ -18,20 +32,80 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
   const [lineCount, setLineCount] = useState(1);
+  const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
+  const [isValidJson, setIsValidJson] = useState(false);
 
-  // Update line count when data changes
-  useEffect(() => {
-    const lines = data.split('\n').length;
-    setLineCount(Math.max(1, lines));
+  // Check if JSON is valid and parse structure
+  const jsonStructure = useMemo(() => {
+    if (!data.trim()) {
+      return null;
+    }
+
+    try {
+      JSON.parse(data);
+      return parseJsonStructure(data);
+    } catch {
+      return null;
+    }
   }, [data]);
 
+  // Update validity state when JSON structure changes
+  useEffect(() => {
+    setIsValidJson(!!jsonStructure);
+  }, [jsonStructure]);
+
+  // Calculate display data based on collapsed sections
+  const displayData = useMemo(() => {
+    if (!data.trim() || !isValidJson) {
+      return data;
+    }
+
+    const hasCollapsed = collapsibleSections.some(s => s.isCollapsed);
+    return hasCollapsed ? getCollapsedContent(data, collapsibleSections) : data;
+  }, [data, collapsibleSections, isValidJson]);
+
+  // Update line count when display data changes
+  useEffect(() => {
+    const lines = displayData.split('\n').length;
+    setLineCount(Math.max(1, lines));
+  }, [displayData]);
+
+  // Update collapsible sections when JSON structure changes
+  useEffect(() => {
+    if (jsonStructure?.sections) {
+      setCollapsibleSections(prev => {
+        // Preserve collapsed state for existing sections
+        const newSections = jsonStructure.sections.map(newSection => {
+          const existingSection = prev.find(s => 
+            s.startLine === newSection.startLine && 
+            s.endLine === newSection.endLine && 
+            s.type === newSection.type
+          );
+          return existingSection ? { ...newSection, isCollapsed: existingSection.isCollapsed } : newSection;
+        });
+        return newSections;
+      });
+    } else {
+      setCollapsibleSections([]);
+    }
+  }, [jsonStructure]);
+
+  const handleToggleSection = useCallback((sectionIndex: number) => {
+    setCollapsibleSections(prev => toggleSection(prev, sectionIndex));
+  }, []);
+
+  // Get section for a specific line
+  const getSectionForLine = useCallback((lineNumber: number) => {
+    return collapsibleSections.findIndex(section => section.startLine === lineNumber);
+  }, [collapsibleSections]);
+
   // Create highlighted content
-  const createHighlightedContent = () => {
-    if (!showAiHighlights || aiChanges.length === 0) {
+  const createHighlightedContent = useCallback(() => {
+    if (!showAiHighlights || aiChanges.length === 0 || !displayData) {
       return '';
     }
 
-    const lines = data.split('\n');
+    const lines = displayData.split('\n');
     const changeMap = new Map<number, AiChange>();
     
     aiChanges.forEach(change => {
@@ -55,35 +129,62 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     });
 
     return highlightedLines.join('');
-  };
+  }, [showAiHighlights, aiChanges, displayData]);
 
   // Sync scroll between content, highlights, and line numbers
-  const handleScroll = (e: React.UIEvent<HTMLPreElement>) => {
+  const handleScroll = useCallback((e: React.UIEvent<HTMLPreElement>) => {
     if (highlightRef.current && lineNumbersRef.current) {
       highlightRef.current.scrollTop = e.currentTarget.scrollTop;
       highlightRef.current.scrollLeft = e.currentTarget.scrollLeft;
       lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
     }
-  };
+  }, []);
 
   return (
     <div className={`relative flex w-full h-full overflow-hidden rounded-b-md ${className || ''}`}>
-      {/* Line Numbers */}
+      {/* Line Numbers with Collapse/Expand Controls */}
       <div 
         ref={lineNumbersRef}
-        className="flex-shrink-0 w-12 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden"
+        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden"
         style={{
           fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
           fontSize: '14px',
           lineHeight: '1.5',
         }}
       >
-        <div className="px-2 py-4 text-slate-400 text-right select-none">
-          {Array.from({ length: lineCount }, (_, i) => (
-            <div key={i + 1} className="leading-6">
-              {i + 1}
-            </div>
-          ))}
+        <div className="px-1 py-4 text-slate-400 select-none">
+          {Array.from({ length: lineCount }, (_, i) => {
+            const lineNumber = i;
+            const sectionIndex = getSectionForLine(lineNumber);
+            const hasCollapsible = sectionIndex !== -1;
+            const section = hasCollapsible ? collapsibleSections[sectionIndex] : null;
+            
+            return (
+              <div key={i + 1} className="leading-6 flex items-center justify-between h-6">
+                <div className="flex items-center">
+                  {isValidJson && hasCollapsible && section ? (
+                    <button
+                      onClick={() => handleToggleSection(sectionIndex)}
+                      className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors mr-1"
+                      title={section.isCollapsed ? 'Expand' : 'Collapse'}
+                      aria-label={`${section.isCollapsed ? 'Expand' : 'Collapse'} ${section.type} at line ${i + 1}`}
+                    >
+                      {section.isCollapsed ? (
+                        <ChevronRightIcon className="w-3 h-3" />
+                      ) : (
+                        <ChevronDownIcon className="w-3 h-3" />
+                      )}
+                    </button>
+                  ) : (
+                    <div className="w-4" />
+                  )}
+                </div>
+                <div className="text-right flex-1 pr-1">
+                  {i + 1}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -119,7 +220,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
           }}
           onScroll={handleScroll}
         >
-          <code className="leading-6">{data}</code>
+          <code className="leading-6">{displayData}</code>
         </pre>
         
         {/* Background for when not highlighting */}
