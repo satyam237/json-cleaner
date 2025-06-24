@@ -13,7 +13,7 @@ import { JsonStats } from './components/JsonStats';
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
-import { GithubIcon, SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
+import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
 
 // Helper to escape XML characters
 const escapeXml = (unsafe: string): string =>
@@ -285,20 +285,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
-      <header className="mb-6 flex justify-between items-center">
+      <header className="mb-6">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
           aijsonformatter
         </h1>
-        <a
-          href="https://github.com/satyam237/json-cleaner"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-slate-400 hover:text-slate-200 transition-colors"
-          title="View Project on GitHub"
-          aria-label="View Project on GitHub"
-        >
-          <GithubIcon className="w-7 h-7" />
-        </a>
       </header>
 
       <main role="main" className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -501,7 +491,7 @@ const App: React.FC = () => {
             Format JSON • Validate JSON • Clean JSON • Beautify JSON • Python to JSON Converter
           </p>
         </div>
-        <p className="text-xs text-slate-500">AI-powered by Google Gemini API • Made with ❤️ by Satyam Jadhav</p>
+        <p className="text-xs text-slate-500">AI-powered by Google Gemini API</p>
       </footer>
     </div>
   );

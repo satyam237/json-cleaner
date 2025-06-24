@@ -42,40 +42,46 @@ export const JsonInput: React.FC<JsonInputProps> = ({
   const errorClasses = "focus:ring-red-500 border-red-500/70 focus:border-red-500";
   const normalClasses = "focus:ring-indigo-500 border-slate-600/50 focus:border-indigo-500 focus:ring-offset-slate-800"; 
 
-  // Check if JSON is valid and parse structure
+  // Parse structure for both JSON and Python-like syntax
   const jsonStructure = useMemo(() => {
     if (!value.trim()) {
       return null;
     }
 
+    // Try to parse as JSON first
+    let isValidJsonFormat = false;
     try {
       JSON.parse(value);
-      return parseJsonStructure(value);
+      isValidJsonFormat = true;
     } catch {
-      return null;
+      // Not valid JSON, but might still have collapsible structure
     }
+
+    // Parse structure regardless of JSON validity (for Python-like syntax too)
+    const structure = parseJsonStructure(value);
+    return structure.sections.length > 0 ? structure : null;
   }, [value]);
 
-  // Update validity state when JSON structure changes
+  // Update validity state when structure changes
   useEffect(() => {
     setIsValidJson(!!jsonStructure);
   }, [jsonStructure]);
 
   // Calculate display value based on collapsed sections
   const displayValue = useMemo(() => {
-    if (!value.trim() || !isValidJson) {
+    if (!value.trim() || !jsonStructure) {
       return value;
     }
 
     const hasCollapsed = collapsibleSections.some(s => s.isCollapsed);
     return hasCollapsed ? getCollapsedContent(value, collapsibleSections) : value;
-  }, [value, collapsibleSections, isValidJson]);
+  }, [value, collapsibleSections, jsonStructure]);
 
   // Update read-only mode based on collapsed sections
   useEffect(() => {
     const hasCollapsed = collapsibleSections.some(s => s.isCollapsed);
-    setIsReadOnlyMode(hasCollapsed && isValidJson);
-  }, [collapsibleSections, isValidJson]);
+    setIsReadOnlyMode(hasCollapsed && !!jsonStructure);
+  }, [collapsibleSections, jsonStructure]);
 
   // Update line count when display value changes
   useEffect(() => {
@@ -157,9 +163,9 @@ export const JsonInput: React.FC<JsonInputProps> = ({
             const section = hasCollapsible ? collapsibleSections[sectionIndex] : null;
             
             return (
-              <div key={i + 1} className="leading-6 flex items-center justify-between h-6">
-                <div className="flex items-center">
-                  {isValidJson && hasCollapsible && section ? (
+              <div key={i + 1} className="leading-6 flex items-center h-6">
+                <div className="flex items-center w-4">
+                  {jsonStructure && hasCollapsible && section ? (
                     <button
                       onClick={() => handleToggleSection(sectionIndex)}
                       className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"

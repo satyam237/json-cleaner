@@ -35,34 +35,40 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [isValidJson, setIsValidJson] = useState(false);
 
-  // Check if JSON is valid and parse structure
+  // Parse structure for both JSON and Python-like syntax
   const jsonStructure = useMemo(() => {
     if (!data.trim()) {
       return null;
     }
 
+    // Try to parse as JSON first
+    let isValidJsonFormat = false;
     try {
       JSON.parse(data);
-      return parseJsonStructure(data);
+      isValidJsonFormat = true;
     } catch {
-      return null;
+      // Not valid JSON, but might still have collapsible structure
     }
+
+    // Parse structure regardless of JSON validity (for Python-like syntax too)
+    const structure = parseJsonStructure(data);
+    return structure.sections.length > 0 ? structure : null;
   }, [data]);
 
-  // Update validity state when JSON structure changes
+  // Update validity state when structure changes
   useEffect(() => {
     setIsValidJson(!!jsonStructure);
   }, [jsonStructure]);
 
   // Calculate display data based on collapsed sections
   const displayData = useMemo(() => {
-    if (!data.trim() || !isValidJson) {
+    if (!data.trim() || !jsonStructure) {
       return data;
     }
 
     const hasCollapsed = collapsibleSections.some(s => s.isCollapsed);
     return hasCollapsed ? getCollapsedContent(data, collapsibleSections) : data;
-  }, [data, collapsibleSections, isValidJson]);
+  }, [data, collapsibleSections, jsonStructure]);
 
   // Update line count when display data changes
   useEffect(() => {
@@ -160,9 +166,9 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
             const section = hasCollapsible ? collapsibleSections[sectionIndex] : null;
             
             return (
-              <div key={i + 1} className="leading-6 flex items-center justify-between h-6">
-                <div className="flex items-center">
-                  {isValidJson && hasCollapsible && section ? (
+              <div key={i + 1} className="leading-6 flex items-center h-6">
+                <div className="flex items-center w-4">
+                  {jsonStructure && hasCollapsible && section ? (
                     <button
                       onClick={() => handleToggleSection(sectionIndex)}
                       className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"

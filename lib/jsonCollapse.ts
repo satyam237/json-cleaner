@@ -36,13 +36,14 @@ export function parseJsonStructure(jsonString: string): {
       isVisible: true
     };
 
-    // Parse character by character to handle complex JSON structures
+    // Parse character by character to handle both JSON and Python-like structures
     let inString = false;
     let escapeNext = false;
     let openBraces = 0;
     let closeBraces = 0;
     let openBrackets = 0;
     let closeBrackets = 0;
+    let stringDelimiter = '';
 
     for (let i = 0; i < trimmed.length; i++) {
       const char = trimmed[i];
@@ -57,8 +58,14 @@ export function parseJsonStructure(jsonString: string): {
         continue;
       }
       
-      if (char === '"') {
-        inString = !inString;
+      // Handle both single and double quotes (for Python compatibility)
+      if ((char === '"' || char === "'") && !inString) {
+        inString = true;
+        stringDelimiter = char;
+        continue;
+      } else if (char === stringDelimiter && inString) {
+        inString = false;
+        stringDelimiter = '';
         continue;
       }
       
