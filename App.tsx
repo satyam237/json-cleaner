@@ -84,13 +84,10 @@ const App: React.FC = () => {
     return () => clearTimeout(handler);
   }, [rawJson, processJson, selectedOutputFormat]);
 
+  // Simplified format switching - always process when format changes
   useEffect(() => {
-    if (rawJson.trim() === '' && !isLoading && !error && !formattedJson) {
-      processJson('', selectedOutputFormat);
-    } else {
-      processJson(rawJson, selectedOutputFormat);
-    }
-  }, [selectedOutputFormat]); 
+    processJson(rawJson, selectedOutputFormat);
+  }, [selectedOutputFormat, processJson]);
 
    useEffect(() => {
     if (pendingAiConversionToJSON && rawJson.trim() !== '') {
@@ -456,7 +453,7 @@ const App: React.FC = () => {
           {aiFeaturesPotentiallyEnabled && (
             <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
               <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><SparklesIcon className="w-4 h-4 mr-2 text-indigo-400"/>AI Clean</h4>
-              <p className="text-xs text-slate-400">Advanced AI-powered correction for more complex errors and direct conversion to your selected output format (JSON or Python). Requires API key configured on the backend.</p>
+              <p className="text-xs text-slate-400">Advanced AI-powered correction for more complex errors and direct conversion to your selected output format (JSON or Python).</p>
             </div>
           )}
         </div>
