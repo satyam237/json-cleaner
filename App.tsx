@@ -327,7 +327,7 @@ const App: React.FC = () => {
             </div>
             {showAiHighlights && aiChanges.length > 0 && (
               <div className="mt-2 p-2 bg-slate-600/30 rounded text-xs text-slate-300">
-                <span className="font-medium">AI Changes:</span>
+                <span className="font-medium">AI Changes in Output:</span>
                 <span className="ml-2 inline-flex items-center">
                   <span className="w-2 h-2 bg-green-400 rounded mr-1"></span>Added
                 </span>
@@ -337,7 +337,7 @@ const App: React.FC = () => {
                 <span className="ml-2 inline-flex items-center">
                   <span className="w-2 h-2 bg-red-400 rounded mr-1"></span>Removed
                 </span>
-                <span className="ml-3 text-slate-400">(highlights clear when you edit)</span>
+                <span className="ml-3 text-slate-400">(highlights persist until input is edited)</span>
               </div>
             )}
           </div>
@@ -347,8 +347,6 @@ const App: React.FC = () => {
             placeholder="Paste your JSON for formatting, validation, or to check JSON online..."
             hasError={!!error}
             className={`flex-grow w-full h-full ${textAreaMinHeight}`}
-            aiChanges={aiChanges}
-            showAiHighlights={showAiHighlights}
             onClearHighlights={clearAiHighlights}
           />
         </div>
@@ -433,7 +431,12 @@ const App: React.FC = () => {
             </div>
           )}
           {!isLoading && !error && formattedJson && (
-            <JsonOutput data={formattedJson} className={`flex-grow w-full h-full ${textAreaMinHeight}`} />
+            <JsonOutput 
+              data={formattedJson} 
+              className={`flex-grow w-full h-full ${textAreaMinHeight}`}
+              aiChanges={aiChanges}
+              showAiHighlights={showAiHighlights}
+            />
           )}
           {!isLoading && !error && !formattedJson && (
              <div className={`flex-grow flex items-center justify-center text-slate-400 ${textAreaMinHeight}`}>

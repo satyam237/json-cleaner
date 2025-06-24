@@ -97,9 +97,6 @@ export const useJsonProcessor = () => {
     setIsLoading(true);
     setError(null);
     setPendingAiConversionToJSON(false);
-    
-    // Clear AI highlights when processing new input
-    clearAiHighlights();
 
     if (lastValidParsedJsonObject &&
         (targetOutputFormat !== formatOfCurrentOutput ||
@@ -116,6 +113,9 @@ export const useJsonProcessor = () => {
       return;
     }
   
+    // Clear AI highlights when processing new input (not just format change)
+    clearAiHighlights();
+
     setFormattedJson(''); 
     if (!jsonString.trim()) {
       setLastValidParsedJsonObject(null);
@@ -218,7 +218,7 @@ export const useJsonProcessor = () => {
     setFormattedJson('');
     setPendingAiConversionToJSON(false);
     
-    // Store original text for highlighting changes
+    // Store original text for highlighting changes - but we'll calculate diff against expected output
     setOriginalTextBeforeAi(jsonString);
 
     try {
@@ -259,8 +259,23 @@ export const useJsonProcessor = () => {
         setFormattedJson(aiResult.correctedText);
         setFormatOfCurrentOutput(outputFormat); 
         
-        // Calculate and set AI changes for highlighting
-        const changes = calculateChanges(jsonString, aiResult.correctedText);
+        // Calculate changes between what normal processing would produce vs AI output
+        let expectedOutput = '';
+        try {
+          // Try to parse the original input and format it normally
+          const parsed = JSON.parse(jsonString);
+          if (outputFormat === 'json') {
+            expectedOutput = JSON.stringify(parsed, null, 2);
+          } else {
+            expectedOutput = formatJsObjectToPythonString(parsed);
+          }
+        } catch (e) {
+          // If original input is invalid JSON, compare against the raw input
+          // This helps show what AI changed from the malformed input
+          expectedOutput = jsonString;
+        }
+        
+        const changes = calculateChanges(expectedOutput, aiResult.correctedText);
         setAiChanges(changes);
         setShowAiHighlights(changes.length > 0);
         
