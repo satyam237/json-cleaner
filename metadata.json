@@ -1,5 +1,5 @@
 {
-  "name": "aijsonformatter: AI-Powered JSON Formatter & Cleaner",
+  "name": "AIjsonformatter: AI-Powered JSON Formatter & Cleaner",
   "description": "A simple and beautiful JSON validator, formatter, and cleaner. Paste your JSON, see it beautified, and get help fixing errors, optionally with AI assistance.",
   "requestFramePermissions": []
 }

@@ -1,8 +1,8 @@
-# 🎯 **aijsonformatter** - AI-Powered JSON Formatter & Cleaner
+# 🎯 **AIjsonformatter** - AI-Powered JSON Formatter & Cleaner
 
 **Live at: [aijsonformatter.site](https://aijsonformatter.site)**
 
-A beautiful, intelligent web application that makes working with JSON data effortless. Whether you're a developer debugging API responses, a data analyst cleaning datasets, or anyone dealing with JSON structures, aijsonformatter provides the tools you need to format, validate, and fix your data instantly.
+A beautiful, intelligent web application that makes working with JSON data effortless. Whether you're a developer debugging API responses, a data analyst cleaning datasets, or anyone dealing with JSON structures, AIjsonformatter provides the tools you need to format, validate, and fix your data instantly.
 
 ---
 
@@ -46,7 +46,7 @@ A beautiful, intelligent web application that makes working with JSON data effor
 
 ---
 
-## 🔗 Access aijsonformatter
+## 🔗 Access AIjsonformatter
 
 **Visit**: [aijsonformatter.site](https://aijsonformatter.site)
 

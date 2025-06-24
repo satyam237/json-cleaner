@@ -287,7 +287,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
       <header className="mb-6">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
-          aijsonformatter
+          AIjsonformatter
         </h1>
       </header>
 
@@ -485,7 +485,7 @@ const App: React.FC = () => {
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
         <div className="mb-3">
           <p className="text-sm text-slate-300 mb-1">
-            <strong>aijsonformatter</strong> - Free Online JSON Formatter, Validator & Cleaner
+            <strong>AIjsonformatter</strong> - Free Online JSON Formatter, Validator & Cleaner
           </p>
           <p className="text-xs text-slate-400">
             Format JSON • Validate JSON • Clean JSON • Beautify JSON • Python to JSON Converter
