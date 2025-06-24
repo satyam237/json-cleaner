@@ -1,8 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+
+// Declare gtag for Google Analytics
+declare global {
+  function gtag(...args: any[]): void;
+}
 import { JsonInput } from './components/JsonInput';
 import { JsonOutput } from './components/JsonOutput';
 import { Button } from './components/Button';
 import { Alert } from './components/Alert';
+import { JsonStats } from './components/JsonStats';
+import { FeedbackWidget } from './components/FeedbackWidget';
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
@@ -102,6 +109,8 @@ const App: React.FC = () => {
   }, [pendingAiConversionToJSON, rawJson, tryAiFix, clearPendingAiConversion]);
 
 
+
+
   const handleLocalFix = useCallback(async () => {
     const fixed = await tryLocalFix(rawJson);
     setRawJson(fixed); 
@@ -122,12 +131,21 @@ const App: React.FC = () => {
         await navigator.clipboard.writeText(formattedJson);
         setShowCopiedMessage(true);
         setTimeout(() => setShowCopiedMessage(false), 2000);
+        
+        // Track copy action with Google Analytics
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'copy_output', {
+            event_category: 'user_action',
+            event_label: selectedOutputFormat,
+            custom_parameter_1: 'json_action'
+          });
+        }
       } catch (err) {
         console.error('Failed to copy output: ', err);
         alert('Failed to copy output to clipboard.');
       }
     }
-  }, [formattedJson]);
+  }, [formattedJson, selectedOutputFormat]);
 
   const handleClear = useCallback(() => {
     setRawJson('');
@@ -263,11 +281,63 @@ const App: React.FC = () => {
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+      
+      // Ctrl+Enter: Format JSON
+      if (isCtrlOrCmd && event.key === 'Enter' && !isLoading && !isAiLoading) {
+        event.preventDefault();
+        forceProcessJson(rawJson, selectedOutputFormat);
+        
+        // Track keyboard shortcut usage
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'keyboard_shortcut', {
+            event_category: 'user_action',
+            event_label: 'format_json',
+            custom_parameter_1: 'json_action'
+          });
+        }
+      }
+      
+      // Ctrl+Shift+C: Copy output
+      if (isCtrlOrCmd && event.shiftKey && event.key === 'C' && formattedJson && !isLoading && !isAiLoading) {
+        event.preventDefault();
+        handleCopyOutput();
+      }
+      
+      // Ctrl+S: Download as JSON
+      if (isCtrlOrCmd && event.key === 's' && canSave && !isLoading) {
+        event.preventDefault();
+        handleSaveOutput('json');
+        
+        // Track keyboard shortcut usage
+        if (typeof gtag !== 'undefined') {
+          gtag('event', 'keyboard_shortcut', {
+            event_category: 'user_action',
+            event_label: 'download_json',
+            custom_parameter_1: 'json_action'
+          });
+        }
+      }
+      
+      // Escape: Clear all
+      if (event.key === 'Escape' && (rawJson.trim() || formattedJson.trim() || error) && !isLoading && !isAiLoading) {
+        event.preventDefault();
+        handleClear();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [rawJson, selectedOutputFormat, formattedJson, isLoading, isAiLoading, canSave, error, forceProcessJson, handleCopyOutput, handleClear, handleSaveOutput]);
+
   return (
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
       <header className="mb-6 flex justify-between items-center">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
-          JSON Buddy
+          aijsonformatter
         </h1>
         <a
           href="https://github.com/satyam237/json-cleaner"
@@ -421,12 +491,20 @@ const App: React.FC = () => {
             </div>
           )}
           {!isLoading && !isAiLoading && !error && formattedJson && (
-            <JsonOutput 
-              data={formattedJson} 
-              className={`flex-grow w-full h-full ${textAreaMinHeight}`}
-              aiChanges={aiChanges}
-              showAiHighlights={showAiHighlights}
-            />
+            <>
+              <JsonOutput 
+                data={formattedJson} 
+                className={`flex-grow w-full h-full ${textAreaMinHeight}`}
+                aiChanges={aiChanges}
+                showAiHighlights={showAiHighlights}
+              />
+              <div className="p-3 border-t border-slate-600/50">
+                <JsonStats 
+                  originalText={rawJson}
+                  formattedText={formattedJson}
+                />
+              </div>
+            </>
           )}
           {!isLoading && !isAiLoading && !error && !formattedJson && (
              <div className={`flex-grow flex items-center justify-center text-slate-400 ${textAreaMinHeight}`}>
@@ -453,17 +531,29 @@ const App: React.FC = () => {
         
         <div className="mt-6 text-center max-w-4xl mx-auto">
           <h4 className="text-md font-medium text-slate-200 mb-2">Why Choose Our JSON Formatter Tool?</h4>
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <p className="text-sm text-slate-400 leading-relaxed mb-4">
             Format JSON online instantly with our free JSON beautifier and validator. Clean malformed JSON data, validate JSON syntax, and convert between JSON and Python formats. 
             Perfect JSON tool for developers, data analysts, and anyone working with JSON files. No signup required - start formatting JSON now!
           </p>
+          
+          <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md border border-slate-600/40 mb-4">
+            <h5 className="text-sm font-medium text-slate-200 mb-2">⌨️ Keyboard Shortcuts</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-400">
+              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+Enter</code> Format JSON</div>
+              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+Shift+C</code> Copy Output</div>
+              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+S</code> Download JSON</div>
+              <div><code className="bg-slate-600/30 px-1 rounded">Escape</code> Clear All</div>
+            </div>
+          </div>
+
+          <FeedbackWidget className="max-w-md mx-auto" />
         </div>
       </section>
 
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
         <div className="mb-3">
           <p className="text-sm text-slate-300 mb-1">
-            <strong>JSON Buddy</strong> - Free Online JSON Formatter, Validator & Cleaner
+            <strong>aijsonformatter</strong> - Free Online JSON Formatter, Validator & Cleaner
           </p>
           <p className="text-xs text-slate-400">
             Format JSON • Validate JSON • Clean JSON • Beautify JSON • Python to JSON Converter

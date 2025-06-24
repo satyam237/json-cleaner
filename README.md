@@ -1,4 +1,4 @@
-# JSON Buddy: AI-Powered JSON Formatter & Validator
+# aijsonformatter: AI-Powered JSON Formatter & Validator
 
 **Live at: [aijsonformatter.site](https://aijsonformatter.site)**
 
@@ -87,7 +87,7 @@ A beautiful, intelligent web application that makes working with JSON data effor
 
 ## 🤖 AI Technology
 
-JSON Buddy leverages Google's Gemini AI to provide intelligent error correction that goes beyond simple syntax fixes. The AI can:
+aijsonformatter leverages Google's Gemini AI to provide intelligent error correction that goes beyond simple syntax fixes. The AI can:
 
 - Understand context and intent in malformed data
 - Fix complex structural issues automatically
@@ -115,4 +115,4 @@ Full-Stack Developer & AI Enthusiast
 
 ---
 
-*JSON Buddy - Making JSON simple, one format at a time.*
+*aijsonformatter - Making JSON simple, one format at a time.*
