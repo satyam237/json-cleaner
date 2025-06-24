@@ -1,0 +1,33 @@
+
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "node", // Or "bundler" for newer TS versions
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true, // Since Vercel handles compilation of API routes; frontend uses ESM.sh
+    "allowJs": true, // If you have mixed JS/TS files
+     // Paths for Vercel serverless functions (optional, but can help IDE)
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@hooks/*": ["hooks/*"],
+      "@constants": ["constants.tsx"], // Direct file mapping
+      "@appTypes": ["types.ts"] // Direct file mapping for types
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    // Ensure API directory is included if not covered by above
+    "api/**/*.ts" 
+  ],
+  "exclude": ["node_modules"]
+}
