@@ -92,12 +92,12 @@ const App: React.FC = () => {
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [rawJson, processJson]); // Removed selectedOutputFormat to prevent race condition
+  }, [rawJson, selectedOutputFormat, processJson]);
 
   // Handle format switching immediately (no debouncing needed)
   useEffect(() => {
     processJson(rawJson, selectedOutputFormat);
-  }, [selectedOutputFormat, processJson]);
+  }, [rawJson, selectedOutputFormat, processJson]);
 
    useEffect(() => {
     if (pendingAiConversionToJSON && rawJson.trim() !== '') {
@@ -186,7 +186,7 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveOutput = (format: 'txt' | 'json' | 'py' | 'xml') => {
+  const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml') => {
     setIsSaveDropdownOpen(false);
     
     let contentToSave = formattedJson || '';
@@ -276,7 +276,7 @@ const App: React.FC = () => {
     }
     
     triggerDownload(contentToSave, filename, mimeType);
-  };
+  }, [formattedJson, selectedOutputFormat, rawJson]);
 
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
