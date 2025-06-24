@@ -309,6 +309,9 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-3 items-start">
+              <Button onClick={() => processJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading} className="w-full">
+                View
+              </Button>
               <Button onClick={handleLocalFix} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || !rawJson.trim()} className="w-full">
                 <CogIcon className="w-4 h-4 mr-1.5" /> Basic Clean
               </Button>
