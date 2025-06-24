@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { JsonInput } from './components/JsonInput';
 import { JsonOutput } from './components/JsonOutput';
@@ -449,23 +448,6 @@ const App: React.FC = () => {
       </div>
 
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
-        <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-3">
-          <span>Made by Satyam Jadhav</span>
-          <span className="hidden sm:inline">|</span>
-          <a href="mailto:satyam2373@gmail.com" className="flex items-center hover:text-slate-200 transition-colors">
-            <EmailIcon className="w-4 h-4 mr-1.5" /> satyam2373@gmail.com
-          </a>
-          <span className="hidden sm:inline">|</span>
-          <a href="https://www.github.com/satyam237/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-slate-200 transition-colors">
-            <GithubIcon className="w-4 h-4 mr-1.5" /> GitHub Profile
-          </a>
-        </div>
-        <p className="text-xs mb-1">Feel free to contribute!</p>
-        <p className="text-xs mb-3">
-          <a href="https://www.github.com/satyam237/" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">
-            Give this project a star on GitHub!
-          </a>
-        </p>
         <p className="text-xs text-slate-500">Powered by Google Gemini API.</p>
       </footer>
     </div>

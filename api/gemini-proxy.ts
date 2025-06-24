@@ -11,6 +11,9 @@ const EFFECTIVE_GEMINI_MODEL_NAME = GEMINI_MODEL_NAME || "gemini-2.5-flash-previ
 
 export default async function handler(req: any, res: any) {
   try {
+    console.log("Received request:", { method: req.method, body: req.body });
+    console.log("Using GEMINI_API_KEY:", !!process.env.GEMINI_API_KEY);
+
     if (req.method !== 'POST') {
       res.setHeader('Allow', ['POST']);
       return res.status(405).json({ error: 'Method Not Allowed' });
@@ -22,12 +25,14 @@ export default async function handler(req: any, res: any) {
       try {
         body = JSON.parse(body);
       } catch (e) {
+        console.error("Failed to parse request body as JSON:", body);
         return res.status(400).json({ error: "Invalid JSON in request body." });
       }
     }
     const { jsonString, targetOutputFormat } = body;
 
     if (typeof jsonString !== 'string' || typeof targetOutputFormat !== 'string') {
+      console.error("Invalid request body. jsonString or targetOutputFormat missing or not string.", body);
       return res.status(400).json({ 
         error: "Invalid request body. 'jsonString' and 'targetOutputFormat' are required.",
         title: "Bad Request",
@@ -37,6 +42,7 @@ export default async function handler(req: any, res: any) {
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.trim() === '') {
+      console.error("GEMINI_API_KEY is missing or empty.");
       return res.status(500).json({ 
         error: "API key not configured on the server.",
         title: "Server Configuration Error",
@@ -64,6 +70,7 @@ First, determine if the input appears to be an attempt to represent a data struc
 Do not add any explanations or conversational text outside of the JSON object. Just the JSON object.
 `;
 
+    console.log("Prompt sent to Gemini:", prompt);
     const response: GenerateContentResponse = await ai.models.generateContent({
       model: EFFECTIVE_GEMINI_MODEL_NAME,
       contents: prompt,
@@ -72,8 +79,10 @@ Do not add any explanations or conversational text outside of the JSON object. J
         temperature: 0.1,
       }
     });
+    console.log("Raw Gemini API response:", response);
 
     let aiResponseText = response.text?.trim() ?? '';
+    console.log("AI response text:", aiResponseText);
     const fenceRegex = /^```(\w*)?\s*\n?(.*?)\n?\s*```$/s;
     const match = aiResponseText.match(fenceRegex);
     if (match && match[2]) {
@@ -94,6 +103,7 @@ Do not add any explanations or conversational text outside of the JSON object. J
       });
     }
   } catch (error: any) {
+    console.error("Error during Gemini API call:", error);
     return res.status(500).json({
       error: error.message || 'Internal Server Error',
       title: "AI Service Error",
