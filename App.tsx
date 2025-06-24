@@ -281,57 +281,7 @@ const App: React.FC = () => {
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isCtrlOrCmd = event.ctrlKey || event.metaKey;
-      
-      // Ctrl+Enter: Format JSON
-      if (isCtrlOrCmd && event.key === 'Enter' && !isLoading && !isAiLoading) {
-        event.preventDefault();
-        forceProcessJson(rawJson, selectedOutputFormat);
-        
-        // Track keyboard shortcut usage
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'keyboard_shortcut', {
-            event_category: 'user_action',
-            event_label: 'format_json',
-            custom_parameter_1: 'json_action'
-          });
-        }
-      }
-      
-      // Ctrl+Shift+C: Copy output
-      if (isCtrlOrCmd && event.shiftKey && event.key === 'C' && formattedJson && !isLoading && !isAiLoading) {
-        event.preventDefault();
-        handleCopyOutput();
-      }
-      
-      // Ctrl+S: Download as JSON
-      if (isCtrlOrCmd && event.key === 's' && canSave && !isLoading) {
-        event.preventDefault();
-        handleSaveOutput('json');
-        
-        // Track keyboard shortcut usage
-        if (typeof gtag !== 'undefined') {
-          gtag('event', 'keyboard_shortcut', {
-            event_category: 'user_action',
-            event_label: 'download_json',
-            custom_parameter_1: 'json_action'
-          });
-        }
-      }
-      
-      // Escape: Clear all
-      if (event.key === 'Escape' && (rawJson.trim() || formattedJson.trim() || error) && !isLoading && !isAiLoading) {
-        event.preventDefault();
-        handleClear();
-      }
-    };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [rawJson, selectedOutputFormat, formattedJson, isLoading, isAiLoading, canSave, error, forceProcessJson, handleCopyOutput, handleClear, handleSaveOutput]);
 
   return (
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
@@ -536,15 +486,7 @@ const App: React.FC = () => {
             Perfect JSON tool for developers, data analysts, and anyone working with JSON files. No signup required - start formatting JSON now!
           </p>
           
-          <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md border border-slate-600/40 mb-4">
-            <h5 className="text-sm font-medium text-slate-200 mb-2">⌨️ Keyboard Shortcuts</h5>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-400">
-              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+Enter</code> Format JSON</div>
-              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+Shift+C</code> Copy Output</div>
-              <div><code className="bg-slate-600/30 px-1 rounded">Ctrl+S</code> Download JSON</div>
-              <div><code className="bg-slate-600/30 px-1 rounded">Escape</code> Clear All</div>
-            </div>
-          </div>
+
 
 
         </div>

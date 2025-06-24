@@ -23,7 +23,6 @@ A beautiful, intelligent web application that makes working with JSON data effor
 ### 📊 **Advanced Features**
 - **Real-time Statistics**: Character count, lines, file size, and compression ratio
 - **Collapsible Sections**: Expand/collapse JSON objects and arrays with arrow controls
-- **Keyboard Shortcuts**: Power-user shortcuts for common actions
 - **Google Analytics**: Usage tracking and performance monitoring
 
 ### 🎨 **User Experience**
@@ -43,11 +42,7 @@ A beautiful, intelligent web application that makes working with JSON data effor
 4. **Clean**: Use "Basic Clean" for simple fixes or "AI Clean" for complex issues
 5. **Export**: Copy to clipboard or download the formatted result
 
-### ⌨️ **Keyboard Shortcuts**
-- `Ctrl+Enter`: Format JSON
-- `Ctrl+Shift+C`: Copy output to clipboard
-- `Ctrl+S`: Download JSON file
-- `Escape`: Clear all content
+
 
 ---
 

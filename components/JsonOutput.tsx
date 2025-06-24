@@ -165,7 +165,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
                   {isValidJson && hasCollapsible && section ? (
                     <button
                       onClick={() => handleToggleSection(sectionIndex)}
-                      className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors mr-1"
+                      className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
                       title={section.isCollapsed ? 'Expand' : 'Collapse'}
                       aria-label={`${section.isCollapsed ? 'Expand' : 'Collapse'} ${section.type} at line ${i + 1}`}
                     >
@@ -176,7 +176,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
                       )}
                     </button>
                   ) : (
-                    <div className="w-4" />
+                    <div className="w-3" />
                   )}
                 </div>
                 <div className="text-right flex-1 pr-1">
