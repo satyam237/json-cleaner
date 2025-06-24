@@ -1,6 +1,6 @@
-// import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { GEMINI_MODEL_NAME } from '../constants'; // Adjust path if constants.tsx is not in root
+// Use CommonJS require for Vercel compatibility
+const { GoogleGenAI } = require("@google/genai");
+const { GEMINI_MODEL_NAME } = require('../constants'); // Adjust path if constants.tsx is not in root
 
 // Make sure GEMINI_MODEL_NAME is accessible. If constants.tsx is in the root:
 // import { GEMINI_MODEL_NAME } from '../constants'; 
@@ -8,8 +8,7 @@ import { GEMINI_MODEL_NAME } from '../constants'; // Adjust path if constants.ts
 // For simplicity, if it's not found, we'll redefine it here, but ideally, share it.
 const EFFECTIVE_GEMINI_MODEL_NAME = GEMINI_MODEL_NAME || "gemini-2.5-flash-preview-04-17";
 
-
-export default async function handler(req: any, res: any) {
+module.exports = async function handler(req, res) {
   try {
     console.log("Received request:", { method: req.method, body: req.body });
     console.log("Using GEMINI_API_KEY:", !!process.env.GEMINI_API_KEY);
@@ -71,7 +70,7 @@ Do not add any explanations or conversational text outside of the JSON object. J
 `;
 
     console.log("Prompt sent to Gemini:", prompt);
-    const response: GenerateContentResponse = await ai.models.generateContent({
+    const response = await ai.models.generateContent({
       model: EFFECTIVE_GEMINI_MODEL_NAME,
       contents: prompt,
       config: {
@@ -102,7 +101,7 @@ Do not add any explanations or conversational text outside of the JSON object. J
         isAiError: true 
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error during Gemini API call:", error);
     return res.status(500).json({
       error: error.message || 'Internal Server Error',
