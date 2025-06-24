@@ -1,11 +1,7 @@
-// Use CommonJS require for Vercel compatibility
+// Pure CommonJS for Vercel compatibility
 const { GoogleGenAI } = require("@google/genai");
 const { GEMINI_MODEL_NAME } = require('../constants.cjs.js');
 
-// Make sure GEMINI_MODEL_NAME is accessible. If constants.tsx is in the root:
-// import { GEMINI_MODEL_NAME } from '../constants'; 
-// If constants.tsx is elsewhere, adjust the path.
-// For simplicity, if it's not found, we'll redefine it here, but ideally, share it.
 const EFFECTIVE_GEMINI_MODEL_NAME = GEMINI_MODEL_NAME || "gemini-2.5-flash-preview-04-17";
 
 module.exports = async function handler(req, res) {
@@ -109,4 +105,4 @@ Do not add any explanations or conversational text outside of the JSON object. J
       isAiError: true
     });
   }
-}
+}; 

@@ -157,7 +157,7 @@ export const useJsonProcessor = () => {
     setPendingAiConversionToJSON(false); 
 
     try {
-      const proxyResponse = await fetch('/api/gemini-proxy', {
+      const proxyResponse = await fetch('/api/gemini-ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
