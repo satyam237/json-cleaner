@@ -357,7 +357,6 @@ export const JsonInput: React.FC<JsonInputProps> = ({
             fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
             fontSize: '14px',
             lineHeight: '1.5',
-            background: 'rgba(30, 41, 59, 0.5)',
           }}
           dangerouslySetInnerHTML={{ __html: highlightedContent }}
         />
