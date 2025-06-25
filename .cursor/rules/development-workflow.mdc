@@ -1,0 +1,90 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Development Workflow & Build Process
+
+## Development Commands
+Defined in [package.json](mdc:package.json):
+
+```bash
+npm run dev       # Start development server (Vite)
+npm run build     # Build for production
+npm run preview   # Preview production build locally
+```
+
+## Development Environment
+### Requirements
+- **Node.js**: >= 18.0.0 (specified in [package.json](mdc:package.json))
+- **Package Manager**: npm (lockfile: [package-lock.json](mdc:package-lock.json))
+- **TypeScript**: ^5.0.0
+
+### IDE Setup
+- TypeScript configuration in [tsconfig.json](mdc:tsconfig.json)
+- Path aliases: `@/` points to project root (configured in [vite.config.ts](mdc:vite.config.ts))
+
+## Build Configuration
+### Vite Setup ([vite.config.ts](mdc:vite.config.ts))
+- **Alias Configuration**: `@` resolves to project root
+- **Development Server**: Hot module replacement enabled
+- **Production Build**: Optimized output for Vercel deployment
+
+### TypeScript Configuration ([tsconfig.json](mdc:tsconfig.json))
+- Strict mode enabled for type safety
+- React JSX support
+- Modern ES modules target
+
+## Deployment
+### Vercel Configuration ([vercel.json](mdc:vercel.json))
+- **Framework**: Vite detected automatically
+- **API Routes**: Serverless functions in `/api` directory
+- **Environment**: Production optimizations enabled
+
+### Build Output
+- Static assets optimized and versioned
+- Code splitting for optimal loading
+- API functions deployed as serverless
+
+## Code Quality
+### TypeScript Patterns
+- Strict type checking enabled
+- Prefer explicit types over `any`
+- Use union types for controlled values (`OutputFormat = 'json' | 'python'`)
+- Define interfaces for all props and complex objects
+
+### Error Handling
+- Graceful error handling with try-catch blocks
+- User-friendly error messages in UI
+- Console logging for debugging (development only)
+
+### Performance Considerations
+- Use `useCallback` and `useMemo` for expensive operations
+- Implement debouncing for input handling (300ms in [App.tsx](mdc:App.tsx))
+- Lazy loading for heavy components when needed
+
+## Testing Strategy
+- Manual testing with [test-gemini.js](mdc:test-gemini.js) for AI features
+- Browser testing for cross-compatibility
+- Performance testing for large JSON files
+
+## Common Development Tasks
+### Adding New Components
+1. Create component file in [components/](mdc:components/)
+2. Define TypeScript interface for props
+3. Implement component with proper styling
+4. Export from component file
+5. Import and use in parent components
+
+### Adding New Features
+1. Plan component structure and data flow
+2. Update [hooks/useJsonProcessor.ts](mdc:hooks/useJsonProcessor.ts) if needed
+3. Add UI components in [components/](mdc:components/)
+4. Test with various JSON inputs
+5. Update constants if new configurations needed
+
+### API Integration
+1. Modify [api/gemini-ai.js](mdc:api/gemini-ai.js) for new endpoints
+2. Update frontend calls in hooks
+3. Handle loading and error states
+4. Test with [test-gemini.js](mdc:test-gemini.js)

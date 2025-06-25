@@ -1,0 +1,64 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Component Patterns & Conventions
+
+## Component Structure
+All React components follow these patterns:
+
+### Functional Components with TypeScript
+- Use `React.FC<Props>` type for all functional components
+- Define props interfaces above the component
+- Use descriptive names for props interfaces (e.g., `JsonInputProps`, `ButtonProps`)
+
+Example from [components/JsonInput.tsx](mdc:components/JsonInput.tsx):
+```typescript
+interface JsonInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  hasError: boolean;
+  className?: string;
+}
+
+export const JsonInput: React.FC<JsonInputProps> = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  hasError, 
+  className 
+}) => {
+  // Component implementation
+};
+```
+
+## Component Organization
+- **UI Components**: Located in [components/](mdc:components/) directory
+- **Specialized UI**: Advanced components in [components/ui/](mdc:components/ui/)
+- **Export Pattern**: Use named exports, not default exports
+- **File Naming**: PascalCase for component files (e.g., `JsonInput.tsx`, `LoadingSpinner.tsx`)
+
+## Common Component Types
+1. **Input Components**: `JsonInput`, `JsonOutput` - handle data display and interaction
+2. **UI Components**: `Button`, `Alert`, `LoadingSpinner` - reusable interface elements
+3. **Layout Components**: Handle structure and positioning
+4. **Feature Components**: `JsonStats`, `AiLoadingIndicator` - specific functionality
+
+## Icon Components
+Custom SVG icons are defined in [constants.tsx](mdc:constants.tsx) using this pattern:
+```typescript
+export const IconName: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="..." />
+  </svg>
+);
+```
+
+## State Management Patterns
+- Use `useState` for local component state
+- Use `useCallback` for event handlers and memoized functions
+- Use `useMemo` for expensive computations
+- Use `useRef` for DOM element references
+- Extract complex state logic into custom hooks in [hooks/](mdc:hooks/)

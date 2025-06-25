@@ -1,0 +1,83 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Styling Conventions & Design System
+
+## CSS Framework
+The project uses **Tailwind CSS** for styling with a custom design system.
+
+## Color Palette
+### Primary Colors
+- **Indigo**: Primary brand color for focus states and accents
+- **Slate**: Base colors for backgrounds and text
+- **Red**: Error states and validation
+- **Green**: Success states
+
+### Dark Theme
+The application uses a dark theme by default:
+- Background: `slate-800` variants
+- Text: `slate-100` to `slate-400` for hierarchy
+- Borders: `slate-600/50` for subtle divisions
+
+## Component Styling Patterns
+### Class Name Utilities
+Use the utility function from [lib/utils.ts](mdc:lib/utils.ts):
+```typescript
+import { cn } from '../lib/utils';
+
+const className = cn(
+  "base-classes",
+  condition && "conditional-classes",
+  props.className // Allow external override
+);
+```
+
+### Common Patterns
+1. **Focus States**: `focus:ring-2 focus:ring-indigo-500 focus:outline-none`
+2. **Transitions**: `transition-colors duration-200`
+3. **Hover Effects**: `hover:bg-slate-700`
+4. **Border Styles**: `border border-slate-600/50`
+
+## Layout Conventions
+### Container Patterns
+- Use `flex` and `grid` for layouts
+- Responsive design with `sm:`, `md:`, `lg:` prefixes
+- Consistent spacing with `space-y-4`, `gap-4` patterns
+
+### Typography
+- Font Family: System fonts with monospace for code areas
+- Font Size: `text-sm`, `text-base`, `text-lg` for hierarchy
+- Line Height: `leading-6` for readability
+
+## Interactive Elements
+### Buttons
+Standard button pattern in [components/Button.tsx](mdc:components/Button.tsx):
+- Base classes for structure
+- Variant classes for different button types
+- Disabled states with reduced opacity
+- Loading states with spinner integration
+
+### Form Elements
+- Consistent border and focus styles
+- Error states with red color variants
+- Placeholder text with appropriate contrast
+
+## Animation & Motion
+Uses **Framer Motion** for:
+- Page transitions
+- Component state changes
+- Loading animations
+- Micro-interactions
+
+Animation preferences:
+- Subtle and performance-focused
+- Reduced motion support
+- Consistent timing (200ms for quick, 300ms for standard)
+
+## Responsive Design
+- Mobile-first approach
+- Breakpoints: `sm` (640px), `md` (768px), `lg` (1024px)
+- Touch-friendly interactive elements
+- Proper text scaling

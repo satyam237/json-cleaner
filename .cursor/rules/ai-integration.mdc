@@ -1,0 +1,59 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# AI Integration & Gemini API
+
+## AI Architecture
+The application integrates Google Gemini AI for intelligent JSON fixing and format conversion.
+
+## API Structure
+- **Backend API**: [api/gemini-ai.js](mdc:api/gemini-ai.js) - Serverless function for AI requests
+- **Model Configuration**: Uses `GEMINI_MODEL_NAME` from [constants.tsx](mdc:constants.tsx)
+- **Current Model**: `"gemini-2.5-flash-preview-04-17"`
+
+## AI Features
+### JSON Fixing
+- Automatically detects malformed JSON
+- Provides intelligent suggestions for fixing syntax errors
+- Preserves original data structure and intent
+
+### Format Conversion
+- Converts between JSON and Python dictionary formats
+- Maintains data integrity during conversion
+- Handles complex nested structures
+
+### AI Change Tracking
+The application tracks and highlights AI-made changes:
+```typescript
+interface AiChange {
+  line: number;
+  type: 'added' | 'modified' | 'removed';
+  content: string;
+}
+```
+
+## AI Integration Patterns
+### Frontend-Backend Communication
+- AI requests are made to serverless API endpoints
+- Frontend handles loading states and error management
+- Backend manages API keys and rate limiting
+
+### User Experience
+- **Loading Indicators**: `AiLoadingIndicator` component shows AI processing status
+- **Change Highlighting**: Visual indicators show what the AI modified
+- **Progressive Enhancement**: AI features enhance but don't replace basic functionality
+
+### Error Handling
+- Graceful fallback to basic functionality if AI is unavailable
+- Clear error messages for AI-related failures
+- Timeout handling for long-running AI requests
+
+## Environment Setup
+- AI features require API key configuration on backend
+- Frontend assumes AI could be available (`aiFeaturesPotentiallyEnabled = true`)
+- Actual availability checked at runtime
+
+## Testing AI Features
+Use [test-gemini.js](mdc:test-gemini.js) for testing AI integration during development.
