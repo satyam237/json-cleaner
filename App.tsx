@@ -366,16 +366,7 @@ const App: React.FC = () => {
           />
         </div>
 
-        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50 relative">
-          {/* AI Loading Indicator - Fixed at top center of output box */}
-          {isAiLoading && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
-              <div className="bg-slate-700/95 backdrop-blur-md rounded-lg px-4 py-2 shadow-xl border border-slate-600/60">
-                <AiLoadingIndicator />
-              </div>
-            </div>
-          )}
-          
+        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50">
           <div className="p-3 border-b border-slate-600/50">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-slate-100">Formatted Output</h2>
@@ -456,9 +447,9 @@ const App: React.FC = () => {
             </fieldset>
           </div>
 
-          {isLoading && !isAiLoading && (
+          {(isLoading || isAiLoading) && (
             <div className="flex-grow flex items-center justify-center">
-              <LoadingSpinner />
+              {isAiLoading ? <AiLoadingIndicator /> : <LoadingSpinner />}
             </div>
           )}
           {!isLoading && !isAiLoading && error && (
@@ -567,8 +558,6 @@ const App: React.FC = () => {
         
         <p className="text-xs text-slate-500">AI-powered by Google Gemini API</p>
       </footer>
-
-
     </div>
   );
 };
