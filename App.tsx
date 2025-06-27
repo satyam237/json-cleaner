@@ -286,19 +286,9 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
       <header className="mb-6">
-        <div className="flex items-center space-x-3">
-          <img 
-            src="/logo.png" 
-            alt="JSON Buddy Logo" 
-            className="w-10 h-10 md:w-12 md:h-12 rounded-lg shadow-md"
-          />
-          <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
-              AIjsonformatter
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">AI-Powered JSON Formatter & Cleaner</p>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
+          AIjsonformatter
+        </h1>
       </header>
 
       <main role="main" className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
