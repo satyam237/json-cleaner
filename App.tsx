@@ -366,7 +366,16 @@ const App: React.FC = () => {
           />
         </div>
 
-        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50">
+        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50 relative">
+          {/* AI Loading Indicator - Fixed at top center of output box */}
+          {isAiLoading && (
+            <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-30">
+              <div className="bg-slate-700/95 backdrop-blur-md rounded-lg px-4 py-2 shadow-xl border border-slate-600/60">
+                <AiLoadingIndicator />
+              </div>
+            </div>
+          )}
+          
           <div className="p-3 border-b border-slate-600/50">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-semibold text-slate-100">Formatted Output</h2>
@@ -447,12 +456,12 @@ const App: React.FC = () => {
             </fieldset>
           </div>
 
-          {(isLoading || isAiLoading) && (
+          {isLoading && !isAiLoading && (
             <div className="flex-grow flex items-center justify-center">
-              {isAiLoading ? <AiLoadingIndicator /> : <LoadingSpinner />}
+              <LoadingSpinner />
             </div>
           )}
-          {!isLoading && !isAiLoading && error && (
+          {!isLoading && error && (
             <div className="p-4">
               <Alert type={error.isAiError ? "warning" : "error"} title={error.title}>
                 {error.message}
@@ -460,7 +469,7 @@ const App: React.FC = () => {
               </Alert>
             </div>
           )}
-          {!isLoading && !isAiLoading && !error && formattedJson && (
+          {!isLoading && !error && formattedJson && (
             <>
               <JsonOutput 
                 data={formattedJson} 
@@ -477,7 +486,7 @@ const App: React.FC = () => {
               </div>
             </>
           )}
-          {!isLoading && !isAiLoading && !error && !formattedJson && (
+          {!isLoading && !error && !formattedJson && (
              <div className={`flex-grow flex items-center justify-center text-slate-400 ${textAreaMinHeight}`}>
                 <p>{rawJson.trim() ? "Output will appear here once processed." : "Output will appear here."}</p>
              </div>
