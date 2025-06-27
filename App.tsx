@@ -447,9 +447,9 @@ const App: React.FC = () => {
             </fieldset>
           </div>
 
-          {(isLoading || isAiLoading) && (
+          {isLoading && !isAiLoading && (
             <div className="flex-grow flex items-center justify-center">
-              {isAiLoading ? <AiLoadingIndicator /> : <LoadingSpinner />}
+              <LoadingSpinner />
             </div>
           )}
           {!isLoading && !isAiLoading && error && (
@@ -558,6 +558,15 @@ const App: React.FC = () => {
         
         <p className="text-xs text-slate-500">AI-powered by Google Gemini API</p>
       </footer>
+
+      {/* AI Loading Overlay - Fixed Position */}
+      {isAiLoading && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-700/90 backdrop-blur-md rounded-lg p-6 shadow-2xl border border-slate-600/50">
+            <AiLoadingIndicator />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

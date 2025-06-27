@@ -22,4 +22,19 @@ pre, code {
   -o-tab-size: 2;
 }
 
-/* Additional base styles can be added here if needed */ 
+/* Additional base styles can be added here if needed */
+
+/* Faster tooltip display */
+[title] {
+  --tooltip-delay: 0.3s;
+}
+
+[title]:hover {
+  position: relative;
+}
+
+/* Encourage faster tooltip display where possible */
+button[title]:hover,
+[role="button"][title]:hover {
+  cursor: pointer;
+} 
