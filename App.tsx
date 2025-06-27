@@ -9,6 +9,7 @@ import { JsonOutput } from './components/JsonOutput';
 import { Button } from './components/Button';
 import { Alert } from './components/Alert';
 import { JsonStats } from './components/JsonStats';
+import { Logo } from './components/Logo';
 
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -286,7 +287,8 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
       <header className="mb-6">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300">
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 flex items-center gap-3">
+          <Logo size={40} className="flex-shrink-0" />
           AIjsonformatter
         </h1>
       </header>

@@ -1,0 +1,27 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+    <linearGradient id="aiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#ef4444" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background with rounded corners for iOS -->
+  <rect width="180" height="180" rx="40" fill="url(#logoGradient)" />
+  
+  <!-- JSON Braces (scaled for 180x180) -->
+  <path d="M50 62c-6.6 0-12 5.4-12 12v6c0 3.3-2.7 6-6 6s-6 2.7-6 6 2.7 6 6 6c3.3 0 6 2.7 6 6v6c0 6.6 5.4 12 12 12" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" />
+  <path d="M130 62c6.6 0 12 5.4 12 12v6c0 3.3 2.7 6 6 6s6 2.7 6 6-2.7 6-6 6c-3.3 0-6 2.7-6 6v6c0 6.6-5.4 12-12 12" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" />
+  
+  <!-- Center elements (scaled) -->
+  <circle cx="90" cy="68" r="6" fill="white" />
+  <rect x="84" y="84" width="12" height="36" rx="6" fill="white" />
+  
+  <!-- AI indicator (scaled) -->
+  <circle cx="125" cy="45" r="8" fill="url(#aiGradient)" />
+  <path d="M125 32v26M112 45h26" stroke="white" stroke-width="4" stroke-linecap="round" />
+</svg> 
