@@ -14,7 +14,7 @@ import { Logo } from './components/Logo';
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
-import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from './constants';
+import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon, WrapTextIcon, UnwrapTextIcon } from './constants';
 
 // Helper to escape XML characters
 const escapeXml = (unsafe: string): string =>
@@ -56,6 +56,7 @@ const App: React.FC = () => {
   const [selectedOutputFormat, setSelectedOutputFormat] = useState<OutputFormat>('json');
   const [showCopiedMessage, setShowCopiedMessage] = useState<boolean>(false);
   const [isSaveDropdownOpen, setIsSaveDropdownOpen] = useState<boolean>(false);
+  const [isTextWrapped, setIsTextWrapped] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // For the frontend, we'll assume AI features *could* be active if this flag is true.
@@ -152,6 +153,10 @@ const App: React.FC = () => {
     setRawJson('');
     processJson('', selectedOutputFormat); 
   }, [processJson, selectedOutputFormat]);
+
+  const handleToggleTextWrap = useCallback(() => {
+    setIsTextWrapped(prev => !prev);
+  }, []);
 
   const handleUploadFileClick = () => {
     fileInputRef.current?.click();
@@ -300,6 +305,17 @@ const App: React.FC = () => {
               <h2 className="text-xl font-semibold text-slate-100">Input JSON / Python-like</h2>
               <div className="flex items-center space-x-2">
                 <Button
+                  onClick={handleToggleTextWrap}
+                  variant="secondary"
+                  size="sm"
+                  ringOffsetClass="focus:ring-offset-slate-700/30"
+                  disabled={isLoading || isAiLoading}
+                  aria-label={isTextWrapped ? "Unwrap text" : "Wrap text"}
+                  title={isTextWrapped ? "Unwrap text" : "Wrap text"}
+                >
+                  {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
+                </Button>
+                <Button
                   onClick={handleUploadFileClick}
                   variant="secondary"
                   size="sm"
@@ -346,6 +362,7 @@ const App: React.FC = () => {
             hasError={!!error}
             className={`flex-grow w-full h-full ${textAreaMinHeight}`}
             onClearHighlights={clearAiHighlights}
+            isTextWrapped={isTextWrapped}
           />
         </div>
 
@@ -355,6 +372,17 @@ const App: React.FC = () => {
               <h2 className="text-xl font-semibold text-slate-100">Formatted Output</h2>
               <div className="flex items-center space-x-2">
                 {showCopiedMessage && <span className="text-xs text-green-400 mr-1 animate-pulse">Copied!</span>}
+                <Button
+                  onClick={handleToggleTextWrap}
+                  variant="secondary"
+                  size="sm"
+                  ringOffsetClass="focus:ring-offset-slate-700/30"
+                  disabled={isLoading || isAiLoading}
+                  aria-label={isTextWrapped ? "Unwrap text" : "Wrap text"}
+                  title={isTextWrapped ? "Unwrap text" : "Wrap text"}
+                >
+                  {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
+                </Button>
                 <Button 
                   onClick={handleCopyOutput} 
                   variant="secondary" 
@@ -439,6 +467,7 @@ const App: React.FC = () => {
                 className={`flex-grow w-full h-full ${textAreaMinHeight}`}
                 aiChanges={aiChanges}
                 showAiHighlights={showAiHighlights}
+                isTextWrapped={isTextWrapped}
               />
               <div className="p-3 border-t border-slate-600/50">
                 <JsonStats 

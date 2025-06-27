@@ -8,6 +8,7 @@ interface JsonInputProps {
   hasError: boolean;
   className?: string;
   onClearHighlights?: () => void;
+  isTextWrapped?: boolean;
 }
 
 // Chevron icons for collapse/expand
@@ -29,7 +30,8 @@ export const JsonInput: React.FC<JsonInputProps> = ({
   placeholder, 
   hasError, 
   className,
-  onClearHighlights
+  onClearHighlights,
+  isTextWrapped = false
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -207,7 +209,9 @@ export const JsonInput: React.FC<JsonInputProps> = ({
           lineHeight: '1.5',
           background: 'rgba(30, 41, 59, 0.5)',
           tabSize: 2,
-          whiteSpace: 'pre',
+          whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+          wordWrap: isTextWrapped ? 'break-word' : 'normal',
+          overflowWrap: isTextWrapped ? 'break-word' : 'normal',
           overflow: 'auto',
           resize: 'none'
         }}

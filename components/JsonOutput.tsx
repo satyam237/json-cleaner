@@ -7,6 +7,7 @@ interface JsonOutputProps {
   className?: string;
   aiChanges?: AiChange[];
   showAiHighlights?: boolean;
+  isTextWrapped?: boolean;
 }
 
 // Chevron icons for collapse/expand
@@ -26,7 +27,8 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   data, 
   className,
   aiChanges = [],
-  showAiHighlights = false
+  showAiHighlights = false,
+  isTextWrapped = false
 }) => {
   const contentRef = useRef<HTMLPreElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -206,6 +208,9 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
               fontSize: '14px',
               lineHeight: '1.5',
               background: 'rgba(30, 41, 59, 0.5)',
+              whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+              wordWrap: isTextWrapped ? 'break-word' : 'normal',
+              overflowWrap: isTextWrapped ? 'break-word' : 'normal',
             }}
             dangerouslySetInnerHTML={{ __html: createHighlightedContent() }}
           />
@@ -221,7 +226,9 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
             lineHeight: '1.5',
             background: showAiHighlights ? 'transparent' : 'rgba(30, 41, 59, 0.5)',
             tabSize: 2,
-            whiteSpace: 'pre',
+            whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+            wordWrap: isTextWrapped ? 'break-word' : 'normal',
+            overflowWrap: isTextWrapped ? 'break-word' : 'normal',
             margin: 0
           }}
           onScroll={handleScroll}

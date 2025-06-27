@@ -51,4 +51,16 @@ export const DocumentArrowDownIcon: React.FC<React.SVGProps<SVGSVGElement>> = (p
   </svg>
 );
 
+export const WrapTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10m0 0l-3-3m3 3l-3 3M4 18h16" />
+  </svg>
+);
+
+export const UnwrapTextIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  </svg>
+);
+
 export const GEMINI_MODEL_NAME = "gemini-2.5-flash-preview-04-17";
