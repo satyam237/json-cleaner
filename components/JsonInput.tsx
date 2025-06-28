@@ -11,6 +11,7 @@ interface JsonInputProps {
   onClearHighlights?: () => void;
   isTextWrapped?: boolean;
   searchMatches?: number[];
+  currentSearchMatch?: { lineIndex: number; startIndex: number; endIndex: number } | null;
 }
 
 // Chevron icons for collapse/expand
@@ -34,7 +35,8 @@ export const JsonInput: React.FC<JsonInputProps> = ({
   className,
   onClearHighlights,
   isTextWrapped = false,
-  searchMatches = []
+  searchMatches = [],
+  currentSearchMatch = null
 }) => {
   const { theme } = useTheme();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -142,10 +144,43 @@ export const JsonInput: React.FC<JsonInputProps> = ({
     return collapsibleSections.findIndex(section => section.startLine === lineNumber);
   }, [collapsibleSections]);
 
-  // Sync scroll between textarea and line numbers
-  const handleScroll = useCallback(() => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+  // Create highlighted content for search matches
+  const createHighlightedContent = useCallback(() => {
+    if (!displayValue || !currentSearchMatch) {
+      return '';
+    }
+
+    const lines = displayValue.split('\n');
+    
+    const highlightedLines = lines.map((line, lineIndex) => {
+      let processedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      
+      // Add search highlighting if this line has the current match
+      if (currentSearchMatch && currentSearchMatch.lineIndex === lineIndex) {
+        const beforeMatch = processedLine.substring(0, currentSearchMatch.startIndex);
+        const matchText = processedLine.substring(currentSearchMatch.startIndex, currentSearchMatch.endIndex);
+        const afterMatch = processedLine.substring(currentSearchMatch.endIndex);
+        
+        processedLine = `${beforeMatch}<mark class="bg-yellow-300 text-black font-semibold">${matchText}</mark>${afterMatch}`;
+      }
+      
+      return `<div class="leading-6">${processedLine || ' '}</div>`;
+    });
+
+    return highlightedLines.join('');
+  }, [displayValue, currentSearchMatch]);
+
+  // Sync scroll between textarea, highlight layer, and line numbers
+  const handleScroll = useCallback((e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+    
+    // Also sync highlight layer if it exists
+    const highlightLayer = e.currentTarget.parentElement?.querySelector('[data-highlight-layer]') as HTMLElement;
+    if (highlightLayer) {
+      highlightLayer.scrollTop = e.currentTarget.scrollTop;
+      highlightLayer.scrollLeft = e.currentTarget.scrollLeft;
     }
   }, []);
 
@@ -177,7 +212,11 @@ export const JsonInput: React.FC<JsonInputProps> = ({
             const isSearchMatch = searchMatches.includes(lineNumber);
             
             return (
-              <div key={i + 1} className={`leading-6 flex items-center h-6 ${isSearchMatch ? 'bg-yellow-400/20' : ''}`}>
+              <div 
+                key={i + 1} 
+                className={`leading-6 flex items-center h-6 ${isSearchMatch ? 'bg-yellow-400/20' : ''}`}
+                data-line-number={i + 1}
+              >
                 <div className="flex items-center w-4">
                   {jsonStructure && hasCollapsible && section ? (
                     <button
@@ -209,34 +248,66 @@ export const JsonInput: React.FC<JsonInputProps> = ({
         </div>
       </div>
 
-      {/* Text Area */}
-      <textarea
-        ref={textareaRef}
-        value={displayValue}
-        onChange={handleChange}
-        onScroll={handleScroll}
-        placeholder={placeholder || "Paste your JSON here for online formatting, validation, or to check JSON syntax..."}
-        className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 bg-transparent flex-1 ${
-          theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
-        } ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
-        spellCheck="false"
-        readOnly={isReadOnlyMode}
-        style={{ 
-          fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
-          fontSize: '14px',
-          lineHeight: '1.5',
-          background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-          tabSize: 2,
-          whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
-          wordWrap: isTextWrapped ? 'break-word' : 'normal',
-          overflowWrap: isTextWrapped ? 'break-word' : 'normal',
-          overflow: 'auto',
-          resize: 'none'
-        }}
-        aria-invalid={hasError}
-        aria-describedby={hasError ? "json-input-error" : undefined}
-        title={isReadOnlyMode ? "Expand collapsed sections to edit" : undefined}
-      />
+      {/* Text Area Container */}
+      <div className="relative flex-1 overflow-hidden">
+        {/* Highlight layer for search matches */}
+        {currentSearchMatch && (
+          <div
+            data-highlight-layer
+            className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-0"
+            style={{ 
+              fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+              fontSize: '14px',
+              lineHeight: '1.5',
+              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+              whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+              wordWrap: isTextWrapped ? 'break-word' : 'normal',
+              overflowWrap: isTextWrapped ? 'break-word' : 'normal',
+            }}
+            dangerouslySetInnerHTML={{ __html: createHighlightedContent() }}
+          />
+        )}
+        
+        {/* Text Area */}
+        <textarea
+          ref={textareaRef}
+          value={displayValue}
+          onChange={handleChange}
+          onScroll={handleScroll}
+          placeholder={placeholder || "Paste your JSON here for online formatting, validation, or to check JSON syntax..."}
+          className={`${baseClasses} ${hasError ? errorClasses : normalClasses} pl-4 pr-4 py-4 flex-1 relative z-10 ${
+            theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
+          } ${isReadOnlyMode ? 'cursor-not-allowed opacity-75' : ''}`}
+          spellCheck="false"
+          readOnly={isReadOnlyMode}
+          style={{ 
+            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
+            fontSize: '14px',
+            lineHeight: '1.5',
+            background: currentSearchMatch ? 'transparent' : 
+              theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+            tabSize: 2,
+            whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+            wordWrap: isTextWrapped ? 'break-word' : 'normal',
+            overflowWrap: isTextWrapped ? 'break-word' : 'normal',
+            overflow: 'auto',
+            resize: 'none'
+          }}
+          aria-invalid={hasError}
+          aria-describedby={hasError ? "json-input-error" : undefined}
+          title={isReadOnlyMode ? "Expand collapsed sections to edit" : undefined}
+        />
+        
+        {/* Background for when not highlighting */}
+        {!currentSearchMatch && (
+          <div 
+            className="absolute inset-0 pointer-events-none -z-10"
+            style={{ 
+              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)' 
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 };

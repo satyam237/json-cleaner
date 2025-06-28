@@ -65,6 +65,7 @@ const App: React.FC = () => {
   const [searchMatches, setSearchMatches] = useState<number[]>([]);
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentSearchMatch, setCurrentSearchMatch] = useState<{ lineIndex: number; startIndex: number; endIndex: number } | null>(null);
 
   // For the frontend, we'll assume AI features *could* be active if this flag is true.
   // The actual check for API_KEY now happens on the backend.
@@ -192,6 +193,26 @@ const App: React.FC = () => {
 
   const handleSearch = useCallback(() => {
     setShowSearch(true);
+  }, []);
+
+  const handleSearchVisibilityChange = useCallback((visible: boolean) => {
+    setShowSearch(visible);
+    if (!visible) {
+      setCurrentSearchMatch(null);
+    }
+  }, []);
+
+  const handleNavigateToMatch = useCallback((lineIndex: number, startIndex: number, endIndex: number) => {
+    setCurrentSearchMatch({ lineIndex, startIndex, endIndex });
+    
+    // Find the line element and scroll to it
+    setTimeout(() => {
+      // Try to find the line element in either input or output
+      const lineElements = document.querySelectorAll(`[data-line-number="${lineIndex + 1}"]`);
+      if (lineElements.length > 0) {
+        lineElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   }, []);
 
   const handleUploadFileClick = () => {
@@ -487,9 +508,10 @@ const App: React.FC = () => {
                 <JsonSearch
                   content={rawJson}
                   onHighlight={setSearchMatches}
+                  onNavigateToMatch={handleNavigateToMatch}
                   className="mr-2"
                   forceVisible={showSearch}
-                  onVisibilityChange={setShowSearch}
+                  onVisibilityChange={handleSearchVisibilityChange}
                 />
                 <Button
                   onClick={handleToggleTextWrap}
@@ -551,6 +573,7 @@ const App: React.FC = () => {
             onClearHighlights={clearAiHighlights}
             isTextWrapped={isTextWrapped}
             searchMatches={searchMatches}
+            currentSearchMatch={currentSearchMatch}
           />
         </div>
 
@@ -573,7 +596,7 @@ const App: React.FC = () => {
                 >
                   {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
                 </Button>
-                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !formattedJson} title="Compact/Minify JSON">
+                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || (!formattedJson && !rawJson.trim())} title="Compact/Minify JSON">
                   <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 
@@ -674,6 +697,7 @@ const App: React.FC = () => {
                 showAiHighlights={showAiHighlights}
                 isTextWrapped={isTextWrapped}
                 searchMatches={searchMatches}
+                currentSearchMatch={currentSearchMatch}
               />
               <div className="p-3 border-t border-slate-600/50">
                 <JsonStats 

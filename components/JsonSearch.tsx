@@ -2,9 +2,18 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from './Button';
 import { useTheme } from '../hooks/useTheme';
 
+interface SearchMatch {
+  lineIndex: number;
+  lineContent: string;
+  startIndex: number;
+  endIndex: number;
+  matchText: string;
+}
+
 interface JsonSearchProps {
   content: string;
   onHighlight: (matches: number[]) => void;
+  onNavigateToMatch?: (lineIndex: number, startIndex: number, endIndex: number) => void;
   className?: string;
   forceVisible?: boolean;
   onVisibilityChange?: (visible: boolean) => void;
@@ -25,6 +34,7 @@ const XMarkIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 export const JsonSearch: React.FC<JsonSearchProps> = ({ 
   content, 
   onHighlight, 
+  onNavigateToMatch,
   className,
   forceVisible = false,
   onVisibilityChange
@@ -34,7 +44,7 @@ export const JsonSearch: React.FC<JsonSearchProps> = ({
   const [isVisible, setIsVisible] = useState(forceVisible);
   const [currentMatch, setCurrentMatch] = useState(0);
   const [totalMatches, setTotalMatches] = useState(0);
-  const [matches, setMatches] = useState<number[]>([]);
+  const [matches, setMatches] = useState<SearchMatch[]>([]);
 
   const performSearch = useCallback(() => {
     if (!searchTerm.trim() || !content) {
@@ -46,19 +56,46 @@ export const JsonSearch: React.FC<JsonSearchProps> = ({
     }
 
     const lines = content.split('\n');
-    const foundMatches: number[] = [];
+    const foundMatches: SearchMatch[] = [];
+    const matchingLines: number[] = [];
+    const searchLower = searchTerm.toLowerCase();
 
-    lines.forEach((line, index) => {
-      if (line.toLowerCase().includes(searchTerm.toLowerCase())) {
-        foundMatches.push(index);
+    lines.forEach((line, lineIndex) => {
+      const lineLower = line.toLowerCase();
+      let startIndex = 0;
+      
+      // Find all matches in this line
+      while (true) {
+        const matchIndex = lineLower.indexOf(searchLower, startIndex);
+        if (matchIndex === -1) break;
+        
+        foundMatches.push({
+          lineIndex,
+          lineContent: line,
+          startIndex: matchIndex,
+          endIndex: matchIndex + searchTerm.length,
+          matchText: line.substring(matchIndex, matchIndex + searchTerm.length)
+        });
+        
+        if (!matchingLines.includes(lineIndex)) {
+          matchingLines.push(lineIndex);
+        }
+        
+        startIndex = matchIndex + 1;
       }
     });
 
     setMatches(foundMatches);
     setTotalMatches(foundMatches.length);
     setCurrentMatch(foundMatches.length > 0 ? 0 : -1);
-    onHighlight(foundMatches);
-  }, [searchTerm, content, onHighlight]);
+    onHighlight(matchingLines);
+    
+    // Navigate to first match
+    if (foundMatches.length > 0 && onNavigateToMatch) {
+      const firstMatch = foundMatches[0];
+      onNavigateToMatch(firstMatch.lineIndex, firstMatch.startIndex, firstMatch.endIndex);
+    }
+  }, [searchTerm, content, onHighlight, onNavigateToMatch]);
 
   useEffect(() => {
     const debounced = setTimeout(performSearch, 300);
@@ -71,13 +108,25 @@ export const JsonSearch: React.FC<JsonSearchProps> = ({
 
   const handleNext = () => {
     if (matches.length > 0) {
-      setCurrentMatch((prev) => (prev + 1) % matches.length);
+      const nextIndex = (currentMatch + 1) % matches.length;
+      setCurrentMatch(nextIndex);
+      
+      if (onNavigateToMatch && matches[nextIndex]) {
+        const match = matches[nextIndex];
+        onNavigateToMatch(match.lineIndex, match.startIndex, match.endIndex);
+      }
     }
   };
 
   const handlePrev = () => {
     if (matches.length > 0) {
-      setCurrentMatch((prev) => (prev - 1 + matches.length) % matches.length);
+      const prevIndex = (currentMatch - 1 + matches.length) % matches.length;
+      setCurrentMatch(prevIndex);
+      
+      if (onNavigateToMatch && matches[prevIndex]) {
+        const match = matches[prevIndex];
+        onNavigateToMatch(match.lineIndex, match.startIndex, match.endIndex);
+      }
     }
   };
 
@@ -85,6 +134,7 @@ export const JsonSearch: React.FC<JsonSearchProps> = ({
     setIsVisible(false);
     setSearchTerm('');
     setMatches([]);
+    setCurrentMatch(0);
     onHighlight([]);
     if (onVisibilityChange) {
       onVisibilityChange(false);
