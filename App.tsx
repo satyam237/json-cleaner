@@ -102,30 +102,44 @@ const App: React.FC = () => {
     setError
   } = useJsonProcessor();
 
+  // Create stable reference to processJson to avoid race conditions
+  const processJsonRef = useRef(processJson);
+  processJsonRef.current = processJson;
 
+  // Track when we should reset compact mode
+  const shouldResetCompact = useRef(false);
 
   const handleInputChange = useCallback((value: string) => {
     setRawJson(value);
   }, []);
 
-  // Handle rawJson changes with debouncing
+  // Reset compact mode only when explicitly needed
+  const resetCompactMode = useCallback(() => {
+    setIsOutputCompact(false);
+    setCompactedOutput('');
+  }, []);
+
+  // Handle rawJson changes with debouncing - NO processJson dependency
   useEffect(() => {
     const handler = setTimeout(() => {
+      // Reset compact mode when input changes
+      resetCompactMode();
+      
       if (rawJson.trim() === '') {
-        processJson('', selectedOutputFormat);
+        processJsonRef.current('', selectedOutputFormat);
       } else {
-        processJson(rawJson, selectedOutputFormat);
+        processJsonRef.current(rawJson, selectedOutputFormat);
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [rawJson, selectedOutputFormat, processJson]);
+  }, [rawJson, selectedOutputFormat, resetCompactMode]);
 
-  // Handle format switching immediately (no debouncing needed)
+  // Handle format switching immediately - NO processJson dependency  
   useEffect(() => {
-    setIsOutputCompact(false); // Reset compact mode when format changes
-    setCompactedOutput(''); // Clear compacted output
-    processJson(rawJson, selectedOutputFormat);
-  }, [rawJson, selectedOutputFormat, processJson]);
+    // Reset compact mode when format changes
+    resetCompactMode();
+    processJsonRef.current(rawJson, selectedOutputFormat);
+  }, [selectedOutputFormat, rawJson, resetCompactMode]);
 
    useEffect(() => {
     if (pendingAiConversionToJSON && rawJson.trim() !== '') {
@@ -136,12 +150,8 @@ const App: React.FC = () => {
     }
   }, [pendingAiConversionToJSON, rawJson, tryAiFix, clearPendingAiConversion]);
 
-
-
-
   const handleLocalFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     const fixed = await tryLocalFix(rawJson);
     setRawJson(fixed); 
     if (fixed.trim() === '') {
@@ -149,13 +159,12 @@ const App: React.FC = () => {
     } else {
       processJson(fixed, selectedOutputFormat);
     }
-  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat]);
+  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleAiFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     await tryAiFix(rawJson, selectedOutputFormat);
-  }, [rawJson, tryAiFix, selectedOutputFormat]);
+  }, [rawJson, tryAiFix, selectedOutputFormat, resetCompactMode]);
 
   const handleCompact = useCallback(() => {
     try {
@@ -212,10 +221,9 @@ const App: React.FC = () => {
 
   const handleClear = useCallback(() => {
     setRawJson('');
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     processJson('', selectedOutputFormat); 
-  }, [processJson, selectedOutputFormat]);
+  }, [processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleToggleTextWrap = useCallback(() => {
     setIsTextWrapped(prev => !prev);
@@ -451,8 +459,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex space-x-3 items-start">
               <Button onClick={() => {
-                setIsOutputCompact(false); // Reset compact mode
-                setCompactedOutput(''); // Clear compacted output
+                resetCompactMode(); // Reset compact mode
                 forceProcessJson(rawJson, selectedOutputFormat);
               }} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
                 View
