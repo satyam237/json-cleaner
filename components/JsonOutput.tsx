@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import { AiChange } from '../hooks/useJsonProcessor';
 import { parseJsonStructure, toggleSection, getCollapsedContent, CollapsibleSection } from '../lib/jsonCollapse';
+import { useTheme } from '../hooks/useTheme';
 
 interface JsonOutputProps {
   data: string;
@@ -8,6 +9,8 @@ interface JsonOutputProps {
   aiChanges?: AiChange[];
   showAiHighlights?: boolean;
   isTextWrapped?: boolean;
+  searchMatches?: number[];
+  currentSearchMatch?: { lineIndex: number; startIndex: number; endIndex: number } | null;
 }
 
 // Chevron icons for collapse/expand
@@ -28,8 +31,11 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   className,
   aiChanges = [],
   showAiHighlights = false,
-  isTextWrapped = false
+  isTextWrapped = false,
+  searchMatches = [],
+  currentSearchMatch = null
 }) => {
+  const { theme } = useTheme();
   const contentRef = useRef<HTMLPreElement>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -107,37 +113,49 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return collapsibleSections.findIndex(section => section.startLine === lineNumber);
   }, [collapsibleSections]);
 
-  // Create highlighted content
+  // Create highlighted content with both AI and search highlights
   const createHighlightedContent = useCallback(() => {
-    if (!showAiHighlights || aiChanges.length === 0 || !displayData) {
+    if (!displayData) {
       return '';
     }
 
     const lines = displayData.split('\n');
-    const changeMap = new Map<number, AiChange>();
+    const aiChangeMap = showAiHighlights ? new Map<number, AiChange>() : null;
     
-    aiChanges.forEach(change => {
-      changeMap.set(change.line, change);
-    });
+    if (showAiHighlights && aiChanges.length > 0) {
+      aiChanges.forEach(change => {
+        aiChangeMap?.set(change.line, change);
+      });
+    }
 
-    const highlightedLines = lines.map((line, index) => {
-      const change = changeMap.get(index);
-      // Escape HTML entities
-      const escapedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const highlightedLines = lines.map((line, lineIndex) => {
+      const aiChange = aiChangeMap?.get(lineIndex);
+      let processedLine = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       
-      if (change) {
+      // Add search highlighting if this line has matches and we have current search match
+      if (searchMatches.includes(lineIndex) && currentSearchMatch && currentSearchMatch.lineIndex === lineIndex) {
+        const beforeMatch = processedLine.substring(0, currentSearchMatch.startIndex);
+        const matchText = processedLine.substring(currentSearchMatch.startIndex, currentSearchMatch.endIndex);
+        const afterMatch = processedLine.substring(currentSearchMatch.endIndex);
+        
+        processedLine = `${beforeMatch}<mark class="bg-yellow-300 text-black font-semibold">${matchText}</mark>${afterMatch}`;
+      }
+      
+      // Apply AI change highlighting
+      if (aiChange) {
         const highlightClass = 
-          change.type === 'added' ? 'bg-green-500/15 border-l-2 border-green-400/60 px-1 -mx-1' :
-          change.type === 'modified' ? 'bg-yellow-500/15 border-l-2 border-yellow-400/60 px-1 -mx-1' :
+          aiChange.type === 'added' ? 'bg-green-500/15 border-l-2 border-green-400/60 px-1 -mx-1' :
+          aiChange.type === 'modified' ? 'bg-yellow-500/15 border-l-2 border-yellow-400/60 px-1 -mx-1' :
           'bg-red-500/15 border-l-2 border-red-400/60 px-1 -mx-1';
         
-        return `<div class="${highlightClass} leading-6">${escapedLine || ' '}</div>`;
+        return `<div class="${highlightClass} leading-6">${processedLine || ' '}</div>`;
       }
-      return `<div class="leading-6">${escapedLine || ' '}</div>`;
+      
+      return `<div class="leading-6">${processedLine || ' '}</div>`;
     });
 
     return highlightedLines.join('');
-  }, [showAiHighlights, aiChanges, displayData]);
+  }, [showAiHighlights, aiChanges, displayData, searchMatches, currentSearchMatch]);
 
   // Sync scroll between content, highlights, and line numbers
   const handleScroll = useCallback((e: React.UIEvent<HTMLPreElement>) => {
@@ -153,27 +171,43 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
       {/* Line Numbers with Collapse/Expand Controls */}
       <div 
         ref={lineNumbersRef}
-        className="flex-shrink-0 w-16 bg-slate-600/30 border-r border-slate-600/50 overflow-hidden"
+        className={`flex-shrink-0 w-16 border-r overflow-hidden ${
+          theme === 'dark' 
+            ? 'bg-slate-600/30 border-slate-600/50' 
+            : 'bg-gray-200/50 border-gray-300/50'
+        }`}
         style={{
           fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
           fontSize: '14px',
           lineHeight: '1.5',
         }}
       >
-        <div className="px-1 py-4 text-slate-400 select-none">
+        <div className={`px-1 py-4 select-none ${
+          theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
+        }`}>
           {Array.from({ length: lineCount }, (_, i) => {
             const lineNumber = i;
             const sectionIndex = getSectionForLine(lineNumber);
             const hasCollapsible = sectionIndex !== -1;
             const section = hasCollapsible ? collapsibleSections[sectionIndex] : null;
             
+            const isSearchMatch = searchMatches.includes(lineNumber);
+            
             return (
-              <div key={i + 1} className="leading-6 flex items-center h-6">
+              <div 
+                key={i + 1} 
+                className={`leading-6 flex items-center h-6 ${isSearchMatch ? 'bg-yellow-400/20' : ''}`}
+                data-line-number={i + 1}
+              >
                 <div className="flex items-center w-4">
                   {jsonStructure && hasCollapsible && section ? (
                     <button
                       onClick={() => handleToggleSection(sectionIndex)}
-                      className="w-3 h-3 flex items-center justify-center text-slate-500 hover:text-slate-300 transition-colors"
+                      className={`w-3 h-3 flex items-center justify-center transition-colors ${
+                        theme === 'dark' 
+                          ? 'text-slate-500 hover:text-slate-300' 
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
                       title={section.isCollapsed ? 'Expand' : 'Collapse'}
                       aria-label={`${section.isCollapsed ? 'Expand' : 'Collapse'} ${section.type} at line ${i + 1}`}
                     >
@@ -199,7 +233,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
       {/* Content Area Container */}
       <div className="relative flex-1 overflow-hidden">
         {/* Highlight layer */}
-        {showAiHighlights && aiChanges.length > 0 && (
+        {((showAiHighlights && aiChanges.length > 0) || (searchMatches.length > 0 && currentSearchMatch)) && (
           <div
             ref={highlightRef}
             className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-0"
@@ -207,7 +241,7 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
               fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
               fontSize: '14px',
               lineHeight: '1.5',
-              background: 'rgba(30, 41, 59, 0.5)',
+              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
               whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
               wordWrap: isTextWrapped ? 'break-word' : 'normal',
               overflowWrap: isTextWrapped ? 'break-word' : 'normal',
@@ -219,12 +253,15 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
         {/* Actual content */}
         <pre 
           ref={contentRef}
-          className="w-full h-full p-4 overflow-auto text-slate-200 relative z-10"
+          className={`w-full h-full p-4 overflow-auto relative z-10 ${
+            theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
+          }`}
           style={{ 
             fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
             fontSize: '14px',
             lineHeight: '1.5',
-            background: showAiHighlights ? 'transparent' : 'rgba(30, 41, 59, 0.5)',
+            background: (showAiHighlights || (searchMatches.length > 0 && currentSearchMatch)) ? 'transparent' : 
+              theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
             tabSize: 2,
             whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
             wordWrap: isTextWrapped ? 'break-word' : 'normal',
@@ -237,10 +274,12 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
         </pre>
         
         {/* Background for when not highlighting */}
-        {!showAiHighlights && (
+        {!showAiHighlights && !(searchMatches.length > 0 && currentSearchMatch) && (
           <div 
             className="absolute inset-0 pointer-events-none -z-10"
-            style={{ background: 'rgba(30, 41, 59, 0.5)' }}
+            style={{ 
+              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)' 
+            }}
           />
         )}
       </div>

@@ -54,7 +54,7 @@ Perfect for developers, data scientists, and anyone working with JSON data who n
 
 ---
 
-## 🛠 **Development**
+## 🛠 **Development & Deployment**
 
 Built with modern web technologies:
 - **React 18** with TypeScript
@@ -65,14 +65,57 @@ Built with modern web technologies:
 
 ### Local Development
 ```bash
+# Install dependencies
 npm install
+
+# For local development (frontend only, AI features won't work)
 npm run dev
+
+# For local development with AI features (requires API key)
+vercel dev --listen 3000
 ```
+
+### Environment Setup
+Create a `.env.local` file in the root directory:
+```bash
+# Google Gemini AI API Key (required for AI Clean functionality)
+# Get your API key from: https://ai.google.dev/
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+### Production Deployment on Vercel
+
+1. **Push to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Production ready build"
+   git push origin main
+   ```
+
+2. **Deploy to Vercel:**
+   - Connect your GitHub repository to Vercel
+   - Add your `GEMINI_API_KEY` in Vercel Dashboard → Settings → Environment Variables
+   - Deploy automatically or manually trigger deployment
+
+3. **Environment Variables in Vercel:**
+   ```
+   GEMINI_API_KEY = your_actual_gemini_api_key
+   ```
 
 ### Build for Production
 ```bash
 npm run build
 ```
+
+### Features Working Without AI Key
+- JSON formatting and validation
+- Basic error cleaning (Python literals, quotes, trailing commas)
+- Compact/minify JSON
+- File upload/download
+- Export to multiple formats (YAML, CSV, TOML, Markdown)
+- Search and highlighting
+- Keyboard shortcuts
+- Theme switching
 
 ---
 

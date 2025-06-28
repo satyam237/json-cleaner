@@ -1,7 +1,7 @@
 {
   "name": "AIjsonformatter - JSON Formatter & Validator",
   "short_name": "AIjsonformatter",
-  "description": "AI-powered JSON formatter, validator and cleaner with Python support",
+  "description": "AI-powered JSON formatter, validator and cleaner with Python support. Features offline mode, drag & drop, keyboard shortcuts, and multiple export formats.",
   "icons": [
     {
       "src": "/favicon.svg",
@@ -21,5 +21,15 @@
   "background_color": "#1e293b",
   "categories": ["developer", "productivity", "utilities"],
   "lang": "en",
-  "orientation": "portrait-primary"
+  "orientation": "any",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Format JSON",
+      "short_name": "Format",
+      "description": "Open AIjsonformatter to format JSON",
+      "url": "/",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    }
+  ]
 } 
