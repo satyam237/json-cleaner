@@ -258,8 +258,15 @@ export const useJsonProcessor = () => {
         }
       }
       
-      // Compact/minify to JSON (no spacing, no newlines)
-      const compacted = JSON.stringify(parsed);
+      // Compact/minify based on whether it's an array or an object.
+      let compacted: string;
+      if (Array.isArray(parsed)) {
+        // If it's an array, stringify each item on its own line (JSON-L like).
+        compacted = parsed.map(item => JSON.stringify(item)).join('\n');
+      } else {
+        // Otherwise, just a standard single-line stringify.
+        compacted = JSON.stringify(parsed);
+      }
       
       setIsLoading(false);
       return compacted;
@@ -405,6 +412,7 @@ export const useJsonProcessor = () => {
     clearAiHighlights,
     aiChanges,
     showAiHighlights,
-    originalTextBeforeAi
+    originalTextBeforeAi,
+    lastValidParsedJsonObject
   };
 };
