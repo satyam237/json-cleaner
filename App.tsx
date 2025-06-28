@@ -98,32 +98,48 @@ const App: React.FC = () => {
     clearAiHighlights,
     aiChanges,
     showAiHighlights,
+    lastValidParsedJsonObject,
+    setError
   } = useJsonProcessor();
 
+  // Create stable reference to processJson to avoid race conditions
+  const processJsonRef = useRef(processJson);
+  processJsonRef.current = processJson;
 
+  // Track when we should reset compact mode
+  const shouldResetCompact = useRef(false);
 
   const handleInputChange = useCallback((value: string) => {
     setRawJson(value);
   }, []);
 
-  // Handle rawJson changes with debouncing
+  // Reset compact mode only when explicitly needed
+  const resetCompactMode = useCallback(() => {
+    setIsOutputCompact(false);
+    setCompactedOutput('');
+  }, []);
+
+  // Handle rawJson changes with debouncing - NO processJson dependency
   useEffect(() => {
     const handler = setTimeout(() => {
+      // Reset compact mode when input changes
+      resetCompactMode();
+      
       if (rawJson.trim() === '') {
-        processJson('', selectedOutputFormat);
+        processJsonRef.current('', selectedOutputFormat);
       } else {
-        processJson(rawJson, selectedOutputFormat);
+        processJsonRef.current(rawJson, selectedOutputFormat);
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [rawJson, selectedOutputFormat, processJson]);
+  }, [rawJson, selectedOutputFormat, resetCompactMode]);
 
-  // Handle format switching immediately (no debouncing needed)
+  // Handle format switching immediately - NO processJson dependency  
   useEffect(() => {
-    setIsOutputCompact(false); // Reset compact mode when format changes
-    setCompactedOutput(''); // Clear compacted output
-    processJson(rawJson, selectedOutputFormat);
-  }, [rawJson, selectedOutputFormat, processJson]);
+    // Reset compact mode when format changes
+    resetCompactMode();
+    processJsonRef.current(rawJson, selectedOutputFormat);
+  }, [selectedOutputFormat, rawJson, resetCompactMode]);
 
    useEffect(() => {
     if (pendingAiConversionToJSON && rawJson.trim() !== '') {
@@ -134,12 +150,8 @@ const App: React.FC = () => {
     }
   }, [pendingAiConversionToJSON, rawJson, tryAiFix, clearPendingAiConversion]);
 
-
-
-
   const handleLocalFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     const fixed = await tryLocalFix(rawJson);
     setRawJson(fixed); 
     if (fixed.trim() === '') {
@@ -147,32 +159,42 @@ const App: React.FC = () => {
     } else {
       processJson(fixed, selectedOutputFormat);
     }
-  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat]);
+  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleAiFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     await tryAiFix(rawJson, selectedOutputFormat);
-  }, [rawJson, tryAiFix, selectedOutputFormat]);
+  }, [rawJson, tryAiFix, selectedOutputFormat, resetCompactMode]);
 
-  const handleCompact = useCallback(async () => {
+  const handleCompact = useCallback(() => {
     try {
       // Work on the current output (formattedJson), not the input
-      if (!formattedJson) {
-        console.warn('No formatted output to compact');
+      if (!formattedJson?.trim()) {
+        setError({
+          title: "No Data to Compact",
+          message: "There is no formatted output to compact.",
+          suggestion: "Please process some JSON data first, then try compacting."
+        });
         return;
       }
       
-      const compacted = await compactJson(formattedJson);
+      const compacted = compactJson(formattedJson);
       setCompactedOutput(compacted);
       setIsOutputCompact(true);
-      // Switch to JSON format since compacting always produces JSON
-      setSelectedOutputFormat('json');
-    } catch (err) {
-      // Error is already handled by compactJson
+      
+      // Clear any previous compact-related errors since compacting succeeded
+      if (error?.title === "No Data to Compact" || error?.title === "Cannot Compact Data") {
+        setError(null);
+      }
+    } catch (err: any) {
       console.error('Compact failed:', err);
+      setError({
+        title: "Cannot Compact Data", 
+        message: err.message || "Failed to compact the current output.",
+        suggestion: "Try processing the input data again, then compact."
+      });
     }
-  }, [formattedJson, compactJson]);
+  }, [formattedJson, compactJson, error, setError]);
 
   const handleCopyOutput = useCallback(async () => {
     const outputToCopy = isOutputCompact ? compactedOutput : formattedJson;
@@ -199,10 +221,9 @@ const App: React.FC = () => {
 
   const handleClear = useCallback(() => {
     setRawJson('');
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     processJson('', selectedOutputFormat); 
-  }, [processJson, selectedOutputFormat]);
+  }, [processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleToggleTextWrap = useCallback(() => {
     setIsTextWrapped(prev => !prev);
@@ -268,204 +289,73 @@ const App: React.FC = () => {
 
   const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml' | 'yaml' | 'csv' | 'toml' | 'md') => {
     setIsSaveDropdownOpen(false);
-    
-    const currentOutput = isOutputCompact ? compactedOutput : formattedJson;
-    let contentToSave = currentOutput || '';
-    let isContentPotentiallyEmpty = !currentOutput;
 
-    let filename = 'output';
+    const currentOutput = isOutputCompact ? compactedOutput : formattedJson;
+    const objectToConvert = lastValidParsedJsonObject;
+
+    let contentToSave = '';
+    let filename = `output.${format}`;
     let mimeType = 'text/plain';
 
-    switch (format) {
-      case 'txt':
-        filename += '.txt';
+    try {
+      if (format === 'txt') {
+        contentToSave = currentOutput || '';
         mimeType = 'text/plain';
-        break;
-      case 'json':
-        filename += '.json';
+      } else if (isOutputCompact && format === 'json') {
+        contentToSave = compactedOutput;
         mimeType = 'application/json';
-        if ((selectedOutputFormat === 'json' || isOutputCompact) && currentOutput) {
-          contentToSave = currentOutput;
-          isContentPotentiallyEmpty = false;
-        } else { 
-          try { 
-            const parsedRaw = JSON.parse(rawJson);
-            contentToSave = JSON.stringify(parsedRaw, null, 2);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            if (currentOutput && selectedOutputFormat === 'python') {
-              alert("Original input is not valid JSON. Saving current Python output as .json instead (may not be true JSON).");
-              contentToSave = currentOutput; 
-              isContentPotentiallyEmpty = !currentOutput;
-            } else if (!currentOutput && !rawJson.trim()) {
-                alert("Nothing to save as JSON."); return;
-            } else {
-                alert("Original input is not valid JSON. Cannot save as structured JSON."); return;
-            }
-          }
-        }
-        break;
-      case 'py':
-        filename += '.py';
-        mimeType = 'application/python';
-        if (selectedOutputFormat === 'python' && currentOutput) {
-          contentToSave = currentOutput;
-           isContentPotentiallyEmpty = false;
-        } else if (currentOutput) { 
-          try {
-            const parsedFormatted = JSON.parse(currentOutput);
-            contentToSave = formatJsObjectToPythonString(parsedFormatted);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Current output is not valid JSON. Cannot convert to Python.");
-            return;
-          }
-        } else if (!rawJson.trim()) {
-            alert("Nothing to save as Python."); return;
+      } else if (!objectToConvert) {
+        if (format === 'py' && selectedOutputFormat === 'python' && formattedJson) {
+          contentToSave = formattedJson;
+          mimeType = 'application/python';
         } else {
-             alert("No valid content to convert to Python."); return;
-        }
-        break;
-      case 'xml':
-        filename += '.xml';
-        mimeType = 'application/xml';
-        let objectToConvert: any = null;
-        if (rawJson.trim()) {
-            try {
-              objectToConvert = JSON.parse(rawJson); 
-            } catch (e) { /* ignore attempt on raw */ }
-        }
-        if (!objectToConvert && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            objectToConvert = JSON.parse(currentOutput); 
-          } catch (e2) { /* ignore attempt on formatted */ }
-        }
-        
-        if (objectToConvert) {
-          contentToSave = jsonToBasicXml(objectToConvert);
-          isContentPotentiallyEmpty = false;
-        } else {
-          alert("Cannot convert to XML. Input data is not valid JSON.");
+          alert(`Cannot save as ${format.toUpperCase()}. The input data is not valid or has not been processed yet.`);
           return;
         }
-        break;
-      case 'yaml':
-        filename += '.yaml';
-        mimeType = 'application/x-yaml';
-        let yamlObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            yamlObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
+      } else {
+        switch (format) {
+          case 'json':
+            contentToSave = JSON.stringify(objectToConvert, null, 2);
+            mimeType = 'application/json';
+            break;
+          case 'py':
+            contentToSave = formatJsObjectToPythonString(objectToConvert);
+            mimeType = 'application/python';
+            break;
+          case 'xml':
+            contentToSave = jsonToBasicXml(objectToConvert);
+            mimeType = 'application/xml';
+            break;
+          case 'yaml':
+            contentToSave = ExportFormatConverter.toYAML(objectToConvert);
+            mimeType = 'application/x-yaml';
+            break;
+          case 'csv':
+            contentToSave = ExportFormatConverter.toCSV(objectToConvert);
+            mimeType = 'text/csv';
+            break;
+          case 'toml':
+            contentToSave = ExportFormatConverter.toTOML(objectToConvert);
+            mimeType = 'application/toml';
+            break;
+          case 'md':
+            contentToSave = ExportFormatConverter.toMarkdownTable(objectToConvert);
+            mimeType = 'text/markdown';
+            break;
         }
-        if (!yamlObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            yamlObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (yamlObject) {
-          try {
-            contentToSave = ExportFormatConverter.toYAML(yamlObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to YAML: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to YAML. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'csv':
-        filename += '.csv';
-        mimeType = 'text/csv';
-        let csvObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            csvObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!csvObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            csvObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (csvObject) {
-          try {
-            contentToSave = ExportFormatConverter.toCSV(csvObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to CSV: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to CSV. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'toml':
-        filename += '.toml';
-        mimeType = 'application/toml';
-        let tomlObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            tomlObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!tomlObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            tomlObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (tomlObject) {
-          try {
-            contentToSave = ExportFormatConverter.toTOML(tomlObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to TOML: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to TOML. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'md':
-        filename += '.md';
-        mimeType = 'text/markdown';
-        let mdObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            mdObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!mdObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            mdObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (mdObject) {
-          try {
-            contentToSave = ExportFormatConverter.toMarkdownTable(mdObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to Markdown table: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to Markdown table. Input data is not valid JSON.");
-          return;
-        }
-        break;
+      }
+    } catch (e: any) {
+      alert(`Failed to convert to ${format.toUpperCase()}: ${e.message}`);
+      return;
     }
 
-    if (isContentPotentiallyEmpty && !contentToSave.trim() && (format === 'txt' || (format === 'py' && selectedOutputFormat !== 'python') )) {
-        alert("No output to save.");
-        return;
+    if (!contentToSave.trim()) {
+      alert("Nothing to save.");
+      return;
     }
-    
+
     triggerDownload(contentToSave, filename, mimeType);
-  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat, rawJson]);
+  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat, lastValidParsedJsonObject]);
 
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
@@ -569,8 +459,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex space-x-3 items-start">
               <Button onClick={() => {
-                setIsOutputCompact(false); // Reset compact mode
-                setCompactedOutput(''); // Clear compacted output
+                resetCompactMode(); // Reset compact mode
                 forceProcessJson(rawJson, selectedOutputFormat);
               }} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
                 View
@@ -618,7 +507,7 @@ const App: React.FC = () => {
                 >
                   {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
                 </Button>
-                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || (!formattedJson && !rawJson.trim())} title="Compact/Minify JSON">
+                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !formattedJson?.trim()} title="Compact/Minify JSON">
                   <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 

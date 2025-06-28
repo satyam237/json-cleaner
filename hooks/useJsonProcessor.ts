@@ -223,56 +223,36 @@ export const useJsonProcessor = () => {
     return cleaned;
   }, [clearAiHighlights]);
 
-  const compactJson = useCallback(async (dataString: string): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-    setPendingAiConversionToJSON(false);
-    setLastAiInputForPython(null); 
-    setRawJsonWasSourceOfLVPJO(false);
-    
-    // Clear AI highlights since we're doing compacting
-    clearAiHighlights();
+  const compactJson = useCallback((dataString: string): string => {
+    if (!dataString?.trim()) {
+      throw new Error("No data to compact");
+    }
 
     try {
-      // Try to parse as JSON first
-      let parsed: any;
-      try {
-        parsed = JSON.parse(dataString);
-      } catch (jsonError) {
-        // If JSON parsing fails, try to evaluate as Python-like data
-        try {
-          // Basic Python to JSON conversion for compacting
-          let pythonLikeData = dataString
-            .replace(/\bTrue\b/g, 'true')
-            .replace(/\bFalse\b/g, 'false')
-            .replace(/\bNone\b/g, 'null');
-          
-          // Properly handle single quotes - only replace string delimiters, not apostrophes
-          pythonLikeData = pythonLikeData.replace(/'((?:\\.|[^'\\])*)'/g, (match, group1) => {
-            return `"${group1.replace(/"/g, '\\"')}"`;
-          });
-          
-          parsed = JSON.parse(pythonLikeData);
-        } catch (pythonError) {
-          throw new Error("Input must be valid JSON or Python-like data structure to compact.");
-        }
+      // Parse the input - it should already be valid JSON/Python from our processor
+      const parsed = JSON.parse(dataString);
+      
+      // Generate compact output based on data type
+      if (Array.isArray(parsed)) {
+        // For arrays: JSON Lines format (each object on one line)
+        return parsed.map(item => JSON.stringify(item)).join('\n');
+      } else {
+        // For objects: Single-line minified JSON
+        return JSON.stringify(parsed);
       }
-      
-      // Compact/minify to JSON (no spacing, no newlines)
-      const compacted = JSON.stringify(parsed);
-      
-      setIsLoading(false);
-      return compacted;
-    } catch (parseError: any) {
-      setIsLoading(false);
-      setError({
-        title: "Cannot Compact Data",
-        message: (parseError as Error).message || "Input must be valid JSON or Python-like data to compact.",
-        suggestion: "Use 'Basic Clean' or 'AI Clean' first to fix syntax errors, then try compacting.",
-      });
-      throw parseError;
+    } catch (parseError) {
+      // If parsing fails, try basic minification of the string
+      return dataString
+        .replace(/\s*\n\s*/g, '') // Remove line breaks and surrounding whitespace
+        .replace(/\s*:\s*/g, ':')  // Remove spaces around colons
+        .replace(/\s*,\s*/g, ',')  // Remove spaces around commas
+        .replace(/\s*{\s*/g, '{')  // Remove spaces around opening braces
+        .replace(/\s*}\s*/g, '}')  // Remove spaces around closing braces
+        .replace(/\s*\[\s*/g, '[') // Remove spaces around opening brackets
+        .replace(/\s*\]\s*/g, ']') // Remove spaces around closing brackets
+        .trim();
     }
-  }, [clearAiHighlights]);
+  }, []);
 
   const tryAiFix = useCallback(async (jsonString: string, outputFormat: OutputFormat): Promise<string | null> => {
     setIsAiLoading(true);
@@ -405,6 +385,8 @@ export const useJsonProcessor = () => {
     clearAiHighlights,
     aiChanges,
     showAiHighlights,
-    originalTextBeforeAi
+    originalTextBeforeAi,
+    lastValidParsedJsonObject,
+    setError
   };
 };
