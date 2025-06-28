@@ -99,6 +99,7 @@ const App: React.FC = () => {
     aiChanges,
     showAiHighlights,
     lastValidParsedJsonObject,
+    setError
   } = useJsonProcessor();
 
 
@@ -156,22 +157,35 @@ const App: React.FC = () => {
     await tryAiFix(rawJson, selectedOutputFormat);
   }, [rawJson, tryAiFix, selectedOutputFormat]);
 
-  const handleCompact = useCallback(async () => {
+  const handleCompact = useCallback(() => {
     try {
       // Work on the current output (formattedJson), not the input
-      if (!formattedJson) {
-        console.warn('No formatted output to compact');
+      if (!formattedJson?.trim()) {
+        setError({
+          title: "No Data to Compact",
+          message: "There is no formatted output to compact.",
+          suggestion: "Please process some JSON data first, then try compacting."
+        });
         return;
       }
       
-      const compacted = await compactJson(formattedJson);
+      const compacted = compactJson(formattedJson);
       setCompactedOutput(compacted);
       setIsOutputCompact(true);
-    } catch (err) {
-      // Error is already handled by compactJson
+      
+      // Clear any previous compact-related errors since compacting succeeded
+      if (error?.title === "No Data to Compact" || error?.title === "Cannot Compact Data") {
+        setError(null);
+      }
+    } catch (err: any) {
       console.error('Compact failed:', err);
+      setError({
+        title: "Cannot Compact Data", 
+        message: err.message || "Failed to compact the current output.",
+        suggestion: "Try processing the input data again, then compact."
+      });
     }
-  }, [formattedJson, compactJson]);
+  }, [formattedJson, compactJson, error, setError]);
 
   const handleCopyOutput = useCallback(async () => {
     const outputToCopy = isOutputCompact ? compactedOutput : formattedJson;
@@ -486,7 +500,7 @@ const App: React.FC = () => {
                 >
                   {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
                 </Button>
-                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || (!formattedJson && !rawJson.trim())} title="Compact/Minify JSON">
+                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !formattedJson?.trim()} title="Compact/Minify JSON">
                   <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 
