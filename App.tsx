@@ -66,6 +66,10 @@ const App: React.FC = () => {
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentSearchMatch, setCurrentSearchMatch] = useState<{ lineIndex: number; startIndex: number; endIndex: number } | null>(null);
+  
+  // Compact output state
+  const [isOutputCompact, setIsOutputCompact] = useState<boolean>(false);
+  const [compactedOutput, setCompactedOutput] = useState<string>('');
 
   // For the frontend, we'll assume AI features *could* be active if this flag is true.
   // The actual check for API_KEY now happens on the backend.
@@ -116,6 +120,8 @@ const App: React.FC = () => {
 
   // Handle format switching immediately (no debouncing needed)
   useEffect(() => {
+    setIsOutputCompact(false); // Reset compact mode when format changes
+    setCompactedOutput(''); // Clear compacted output
     processJson(rawJson, selectedOutputFormat);
   }, [rawJson, selectedOutputFormat, processJson]);
 
@@ -132,6 +138,8 @@ const App: React.FC = () => {
 
 
   const handleLocalFix = useCallback(async () => {
+    setIsOutputCompact(false); // Reset compact mode
+    setCompactedOutput(''); // Clear compacted output
     const fixed = await tryLocalFix(rawJson);
     setRawJson(fixed); 
     if (fixed.trim() === '') {
@@ -142,28 +150,35 @@ const App: React.FC = () => {
   }, [rawJson, tryLocalFix, processJson, selectedOutputFormat]);
 
   const handleAiFix = useCallback(async () => {
+    setIsOutputCompact(false); // Reset compact mode
+    setCompactedOutput(''); // Clear compacted output
     await tryAiFix(rawJson, selectedOutputFormat);
   }, [rawJson, tryAiFix, selectedOutputFormat]);
 
   const handleCompact = useCallback(async () => {
     try {
-      // Use the formatted output if available, otherwise use raw input
-      const sourceData = formattedJson || rawJson;
-      const compacted = await compactJson(sourceData);
-      setRawJson(compacted); 
-      // Force process to show the compacted result
-      processJson(compacted, 'json'); // Always show as JSON since compacting produces JSON
-      setSelectedOutputFormat('json'); // Switch to JSON format
+      // Work on the current output (formattedJson), not the input
+      if (!formattedJson) {
+        console.warn('No formatted output to compact');
+        return;
+      }
+      
+      const compacted = await compactJson(formattedJson);
+      setCompactedOutput(compacted);
+      setIsOutputCompact(true);
+      // Switch to JSON format since compacting always produces JSON
+      setSelectedOutputFormat('json');
     } catch (err) {
       // Error is already handled by compactJson
       console.error('Compact failed:', err);
     }
-  }, [formattedJson, rawJson, compactJson, processJson]);
+  }, [formattedJson, compactJson]);
 
   const handleCopyOutput = useCallback(async () => {
-    if (formattedJson) {
+    const outputToCopy = isOutputCompact ? compactedOutput : formattedJson;
+    if (outputToCopy) {
       try {
-        await navigator.clipboard.writeText(formattedJson);
+        await navigator.clipboard.writeText(outputToCopy);
         setShowCopiedMessage(true);
         setTimeout(() => setShowCopiedMessage(false), 2000);
         
@@ -171,7 +186,7 @@ const App: React.FC = () => {
         if (typeof gtag !== 'undefined') {
           gtag('event', 'copy_output', {
             event_category: 'user_action',
-            event_label: selectedOutputFormat,
+            event_label: isOutputCompact ? 'json_compact' : selectedOutputFormat,
             custom_parameter_1: 'json_action'
           });
         }
@@ -180,10 +195,12 @@ const App: React.FC = () => {
         alert('Failed to copy output to clipboard.');
       }
     }
-  }, [formattedJson, selectedOutputFormat]);
+  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat]);
 
   const handleClear = useCallback(() => {
     setRawJson('');
+    setIsOutputCompact(false); // Reset compact mode
+    setCompactedOutput(''); // Clear compacted output
     processJson('', selectedOutputFormat); 
   }, [processJson, selectedOutputFormat]);
 
@@ -252,8 +269,9 @@ const App: React.FC = () => {
   const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml' | 'yaml' | 'csv' | 'toml' | 'md') => {
     setIsSaveDropdownOpen(false);
     
-    let contentToSave = formattedJson || '';
-    let isContentPotentiallyEmpty = !formattedJson;
+    const currentOutput = isOutputCompact ? compactedOutput : formattedJson;
+    let contentToSave = currentOutput || '';
+    let isContentPotentiallyEmpty = !currentOutput;
 
     let filename = 'output';
     let mimeType = 'text/plain';
@@ -266,8 +284,8 @@ const App: React.FC = () => {
       case 'json':
         filename += '.json';
         mimeType = 'application/json';
-        if (selectedOutputFormat === 'json' && formattedJson) {
-          contentToSave = formattedJson;
+        if ((selectedOutputFormat === 'json' || isOutputCompact) && currentOutput) {
+          contentToSave = currentOutput;
           isContentPotentiallyEmpty = false;
         } else { 
           try { 
@@ -275,11 +293,11 @@ const App: React.FC = () => {
             contentToSave = JSON.stringify(parsedRaw, null, 2);
             isContentPotentiallyEmpty = false;
           } catch (e) {
-            if (formattedJson && selectedOutputFormat === 'python') {
+            if (currentOutput && selectedOutputFormat === 'python') {
               alert("Original input is not valid JSON. Saving current Python output as .json instead (may not be true JSON).");
-              contentToSave = formattedJson; 
-              isContentPotentiallyEmpty = !formattedJson;
-            } else if (!formattedJson && !rawJson.trim()) {
+              contentToSave = currentOutput; 
+              isContentPotentiallyEmpty = !currentOutput;
+            } else if (!currentOutput && !rawJson.trim()) {
                 alert("Nothing to save as JSON."); return;
             } else {
                 alert("Original input is not valid JSON. Cannot save as structured JSON."); return;
@@ -290,12 +308,12 @@ const App: React.FC = () => {
       case 'py':
         filename += '.py';
         mimeType = 'application/python';
-        if (selectedOutputFormat === 'python' && formattedJson) {
-          contentToSave = formattedJson;
+        if (selectedOutputFormat === 'python' && currentOutput) {
+          contentToSave = currentOutput;
            isContentPotentiallyEmpty = false;
-        } else if (formattedJson) { 
+        } else if (currentOutput) { 
           try {
-            const parsedFormatted = JSON.parse(formattedJson);
+            const parsedFormatted = JSON.parse(currentOutput);
             contentToSave = formatJsObjectToPythonString(parsedFormatted);
             isContentPotentiallyEmpty = false;
           } catch (e) {
@@ -317,9 +335,9 @@ const App: React.FC = () => {
               objectToConvert = JSON.parse(rawJson); 
             } catch (e) { /* ignore attempt on raw */ }
         }
-        if (!objectToConvert && selectedOutputFormat === 'json' && formattedJson) {
+        if (!objectToConvert && selectedOutputFormat === 'json' && currentOutput) {
           try {
-            objectToConvert = JSON.parse(formattedJson); 
+            objectToConvert = JSON.parse(currentOutput); 
           } catch (e2) { /* ignore attempt on formatted */ }
         }
         
@@ -340,9 +358,9 @@ const App: React.FC = () => {
             yamlObject = JSON.parse(rawJson);
           } catch (e) { /* ignore */ }
         }
-        if (!yamlObject && selectedOutputFormat === 'json' && formattedJson) {
+        if (!yamlObject && selectedOutputFormat === 'json' && currentOutput) {
           try {
-            yamlObject = JSON.parse(formattedJson);
+            yamlObject = JSON.parse(currentOutput);
           } catch (e) { /* ignore */ }
         }
         if (yamlObject) {
@@ -367,9 +385,9 @@ const App: React.FC = () => {
             csvObject = JSON.parse(rawJson);
           } catch (e) { /* ignore */ }
         }
-        if (!csvObject && selectedOutputFormat === 'json' && formattedJson) {
+        if (!csvObject && selectedOutputFormat === 'json' && currentOutput) {
           try {
-            csvObject = JSON.parse(formattedJson);
+            csvObject = JSON.parse(currentOutput);
           } catch (e) { /* ignore */ }
         }
         if (csvObject) {
@@ -394,9 +412,9 @@ const App: React.FC = () => {
             tomlObject = JSON.parse(rawJson);
           } catch (e) { /* ignore */ }
         }
-        if (!tomlObject && selectedOutputFormat === 'json' && formattedJson) {
+        if (!tomlObject && selectedOutputFormat === 'json' && currentOutput) {
           try {
-            tomlObject = JSON.parse(formattedJson);
+            tomlObject = JSON.parse(currentOutput);
           } catch (e) { /* ignore */ }
         }
         if (tomlObject) {
@@ -421,9 +439,9 @@ const App: React.FC = () => {
             mdObject = JSON.parse(rawJson);
           } catch (e) { /* ignore */ }
         }
-        if (!mdObject && selectedOutputFormat === 'json' && formattedJson) {
+        if (!mdObject && selectedOutputFormat === 'json' && currentOutput) {
           try {
-            mdObject = JSON.parse(formattedJson);
+            mdObject = JSON.parse(currentOutput);
           } catch (e) { /* ignore */ }
         }
         if (mdObject) {
@@ -447,7 +465,7 @@ const App: React.FC = () => {
     }
     
     triggerDownload(contentToSave, filename, mimeType);
-  }, [formattedJson, selectedOutputFormat, rawJson]);
+  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat, rawJson]);
 
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
@@ -550,7 +568,11 @@ const App: React.FC = () => {
               </div>
             </div>
             <div className="flex space-x-3 items-start">
-              <Button onClick={() => forceProcessJson(rawJson, selectedOutputFormat)} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
+              <Button onClick={() => {
+                setIsOutputCompact(false); // Reset compact mode
+                setCompactedOutput(''); // Clear compacted output
+                forceProcessJson(rawJson, selectedOutputFormat);
+              }} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
                 View
               </Button>
               <Button onClick={handleLocalFix} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !rawJson.trim()} className="w-full">
@@ -604,7 +626,7 @@ const App: React.FC = () => {
                   variant="secondary" 
                   ringOffsetClass="focus:ring-offset-slate-700/30" 
                   size="sm" 
-                  disabled={!formattedJson || isLoading || isAiLoading} 
+                  disabled={!(isOutputCompact ? compactedOutput : formattedJson) || isLoading || isAiLoading} 
                   aria-label="Copy output" 
                   title="Copy output"
                 >
@@ -688,10 +710,10 @@ const App: React.FC = () => {
               </Alert>
             </div>
           )}
-          {!isLoading && !isAiLoading && !error && formattedJson && (
+          {!isLoading && !isAiLoading && !error && (isOutputCompact ? compactedOutput : formattedJson) && (
             <>
               <JsonOutput 
-                data={formattedJson} 
+                data={isOutputCompact ? compactedOutput : formattedJson} 
                 className={`flex-grow w-full h-full ${textAreaMinHeight}`}
                 aiChanges={aiChanges}
                 showAiHighlights={showAiHighlights}
@@ -707,7 +729,7 @@ const App: React.FC = () => {
               </div>
             </>
           )}
-          {!isLoading && !isAiLoading && !error && !formattedJson && (
+          {!isLoading && !isAiLoading && !error && !(isOutputCompact ? compactedOutput : formattedJson) && (
              <div className={`flex-grow flex items-center justify-center ${
                theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
              } ${textAreaMinHeight}`}>
