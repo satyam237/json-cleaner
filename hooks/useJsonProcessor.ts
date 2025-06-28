@@ -224,15 +224,6 @@ export const useJsonProcessor = () => {
   }, [clearAiHighlights]);
 
   const compactJson = useCallback(async (dataString: string): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-    setPendingAiConversionToJSON(false);
-    setLastAiInputForPython(null); 
-    setRawJsonWasSourceOfLVPJO(false);
-    
-    // Clear AI highlights since we're doing compacting
-    clearAiHighlights();
-
     try {
       // Try to parse as JSON first
       let parsed: any;
@@ -247,7 +238,6 @@ export const useJsonProcessor = () => {
             .replace(/\bFalse\b/g, 'false')
             .replace(/\bNone\b/g, 'null');
           
-          // Properly handle single quotes - only replace string delimiters, not apostrophes
           pythonLikeData = pythonLikeData.replace(/'((?:\\.|[^'\\])*)'/g, (match, group1) => {
             return `"${group1.replace(/"/g, '\\"')}"`;
           });
@@ -268,18 +258,18 @@ export const useJsonProcessor = () => {
         compacted = JSON.stringify(parsed);
       }
       
-      setIsLoading(false);
+      // Clear any previous error if compacting is successful
+      setError(null);
       return compacted;
     } catch (parseError: any) {
-      setIsLoading(false);
       setError({
         title: "Cannot Compact Data",
         message: (parseError as Error).message || "Input must be valid JSON or Python-like data to compact.",
-        suggestion: "Use 'Basic Clean' or 'AI Clean' first to fix syntax errors, then try compacting.",
+        suggestion: "The currently formatted output is invalid. Try processing the input again.",
       });
-      throw parseError;
+      throw parseError; // Re-throw so the caller in App.tsx knows it failed.
     }
-  }, [clearAiHighlights]);
+  }, []);
 
   const tryAiFix = useCallback(async (jsonString: string, outputFormat: OutputFormat): Promise<string | null> => {
     setIsAiLoading(true);
