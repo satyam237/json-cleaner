@@ -6,15 +6,20 @@ declare global {
 }
 import { JsonInput } from './components/JsonInput';
 import { JsonOutput } from './components/JsonOutput';
+import { JsonSearch } from './components/JsonSearch';
 import { Button } from './components/Button';
 import { Alert } from './components/Alert';
 import { JsonStats } from './components/JsonStats';
 import { Logo } from './components/Logo';
 
 import { useJsonProcessor, OutputFormat, formatJsObjectToPythonString, AiChange } from './hooks/useJsonProcessor';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useDragAndDrop } from './hooks/useDragAndDrop';
+import { useTheme } from './hooks/useTheme';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
-import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon, WrapTextIcon, UnwrapTextIcon } from './constants';
+import { ExportFormatConverter } from './lib/exportFormats';
+import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon, WrapTextIcon, UnwrapTextIcon, SunIcon, MoonIcon, CompressIcon } from './constants';
 
 // Helper to escape XML characters
 const escapeXml = (unsafe: string): string =>
@@ -57,12 +62,21 @@ const App: React.FC = () => {
   const [showCopiedMessage, setShowCopiedMessage] = useState<boolean>(false);
   const [isSaveDropdownOpen, setIsSaveDropdownOpen] = useState<boolean>(false);
   const [isTextWrapped, setIsTextWrapped] = useState<boolean>(false);
+  const [searchMatches, setSearchMatches] = useState<number[]>([]);
+  const [showSearch, setShowSearch] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // For the frontend, we'll assume AI features *could* be active if this flag is true.
   // The actual check for API_KEY now happens on the backend.
   // This could be set based on a config or just be true to always show AI buttons.
-  const aiFeaturesPotentiallyEnabled = true; 
+  const aiFeaturesPotentiallyEnabled = true;
+
+  // Initialize new hooks
+  const { theme, toggleTheme } = useTheme();
+  const { isDragOver, dragHandlers } = useDragAndDrop({
+    onFileUpload: (content) => setRawJson(content),
+    accept: ['.json', '.txt', '.py', '.md']
+  }); 
 
   const {
     formattedJson,
@@ -72,6 +86,7 @@ const App: React.FC = () => {
     processJson,
     tryLocalFix,
     tryAiFix,
+    compactJson,
     pendingAiConversionToJSON,
     clearPendingAiConversion,
     forceProcessJson,
@@ -79,6 +94,8 @@ const App: React.FC = () => {
     aiChanges,
     showAiHighlights,
   } = useJsonProcessor();
+
+
 
   const handleInputChange = useCallback((value: string) => {
     setRawJson(value);
@@ -127,6 +144,21 @@ const App: React.FC = () => {
     await tryAiFix(rawJson, selectedOutputFormat);
   }, [rawJson, tryAiFix, selectedOutputFormat]);
 
+  const handleCompact = useCallback(async () => {
+    try {
+      // Use the formatted output if available, otherwise use raw input
+      const sourceData = formattedJson || rawJson;
+      const compacted = await compactJson(sourceData);
+      setRawJson(compacted); 
+      // Force process to show the compacted result
+      processJson(compacted, 'json'); // Always show as JSON since compacting produces JSON
+      setSelectedOutputFormat('json'); // Switch to JSON format
+    } catch (err) {
+      // Error is already handled by compactJson
+      console.error('Compact failed:', err);
+    }
+  }, [formattedJson, rawJson, compactJson, processJson]);
+
   const handleCopyOutput = useCallback(async () => {
     if (formattedJson) {
       try {
@@ -156,6 +188,10 @@ const App: React.FC = () => {
 
   const handleToggleTextWrap = useCallback(() => {
     setIsTextWrapped(prev => !prev);
+  }, []);
+
+  const handleSearch = useCallback(() => {
+    setShowSearch(true);
   }, []);
 
   const handleUploadFileClick = () => {
@@ -192,7 +228,7 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml') => {
+  const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml' | 'yaml' | 'csv' | 'toml' | 'md') => {
     setIsSaveDropdownOpen(false);
     
     let contentToSave = formattedJson || '';
@@ -274,6 +310,114 @@ const App: React.FC = () => {
           return;
         }
         break;
+      case 'yaml':
+        filename += '.yaml';
+        mimeType = 'application/x-yaml';
+        let yamlObject: any = null;
+        if (rawJson.trim()) {
+          try {
+            yamlObject = JSON.parse(rawJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (!yamlObject && selectedOutputFormat === 'json' && formattedJson) {
+          try {
+            yamlObject = JSON.parse(formattedJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (yamlObject) {
+          try {
+            contentToSave = ExportFormatConverter.toYAML(yamlObject);
+            isContentPotentiallyEmpty = false;
+          } catch (e) {
+            alert("Failed to convert to YAML: " + e.message);
+            return;
+          }
+        } else {
+          alert("Cannot convert to YAML. Input data is not valid JSON.");
+          return;
+        }
+        break;
+      case 'csv':
+        filename += '.csv';
+        mimeType = 'text/csv';
+        let csvObject: any = null;
+        if (rawJson.trim()) {
+          try {
+            csvObject = JSON.parse(rawJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (!csvObject && selectedOutputFormat === 'json' && formattedJson) {
+          try {
+            csvObject = JSON.parse(formattedJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (csvObject) {
+          try {
+            contentToSave = ExportFormatConverter.toCSV(csvObject);
+            isContentPotentiallyEmpty = false;
+          } catch (e) {
+            alert("Failed to convert to CSV: " + e.message);
+            return;
+          }
+        } else {
+          alert("Cannot convert to CSV. Input data is not valid JSON.");
+          return;
+        }
+        break;
+      case 'toml':
+        filename += '.toml';
+        mimeType = 'application/toml';
+        let tomlObject: any = null;
+        if (rawJson.trim()) {
+          try {
+            tomlObject = JSON.parse(rawJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (!tomlObject && selectedOutputFormat === 'json' && formattedJson) {
+          try {
+            tomlObject = JSON.parse(formattedJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (tomlObject) {
+          try {
+            contentToSave = ExportFormatConverter.toTOML(tomlObject);
+            isContentPotentiallyEmpty = false;
+          } catch (e) {
+            alert("Failed to convert to TOML: " + e.message);
+            return;
+          }
+        } else {
+          alert("Cannot convert to TOML. Input data is not valid JSON.");
+          return;
+        }
+        break;
+      case 'md':
+        filename += '.md';
+        mimeType = 'text/markdown';
+        let mdObject: any = null;
+        if (rawJson.trim()) {
+          try {
+            mdObject = JSON.parse(rawJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (!mdObject && selectedOutputFormat === 'json' && formattedJson) {
+          try {
+            mdObject = JSON.parse(formattedJson);
+          } catch (e) { /* ignore */ }
+        }
+        if (mdObject) {
+          try {
+            contentToSave = ExportFormatConverter.toMarkdownTable(mdObject);
+            isContentPotentiallyEmpty = false;
+          } catch (e) {
+            alert("Failed to convert to Markdown table: " + e.message);
+            return;
+          }
+        } else {
+          alert("Cannot convert to Markdown table. Input data is not valid JSON.");
+          return;
+        }
+        break;
     }
 
     if (isContentPotentiallyEmpty && !contentToSave.trim() && (format === 'txt' || (format === 'py' && selectedOutputFormat !== 'python') )) {
@@ -287,23 +431,66 @@ const App: React.FC = () => {
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
 
+  // Initialize keyboard shortcuts after all handlers are defined
+  useKeyboardShortcuts({
+    onFormat: () => forceProcessJson(rawJson, selectedOutputFormat),
+    onClear: handleClear,
+    onCopy: handleCopyOutput,
+    onUpload: handleUploadFileClick,
+    onBasicClean: handleLocalFix,
+    onAiClean: handleAiFix,
+    onCompact: handleCompact,
+    onSearch: handleSearch,
+  });
+
 
 
   return (
-    <div className="min-h-screen bg-slate-800 text-slate-200 flex flex-col p-4 md:p-6 relative z-0">
+    <div 
+      className={`min-h-screen transition-colors duration-200 flex flex-col p-4 md:p-6 relative z-0 ${
+        theme === 'dark' 
+          ? 'bg-slate-800 text-slate-200' 
+          : 'bg-gray-50 text-gray-900'
+      } ${isDragOver ? 'ring-4 ring-indigo-500 ring-opacity-50' : ''}`}
+      {...dragHandlers}
+    >
       <header className="mb-6">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-300 via-slate-100 to-slate-300 flex items-center gap-3">
-          <Logo size={40} className="flex-shrink-0" />
-          AIjsonformatter
-        </h1>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r flex items-center gap-3 ${
+            theme === 'dark' 
+              ? 'from-slate-300 via-slate-100 to-slate-300' 
+              : 'from-gray-700 via-gray-900 to-gray-700'
+          }`}>
+            <Logo size={40} className="flex-shrink-0" />
+            AIjsonformatter
+          </h1>
+          <Button
+            onClick={toggleTheme}
+            variant="secondary"
+            size="sm"
+            className="ml-4"
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
+          </Button>
+        </div>
       </header>
 
       <main role="main" className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50">
           <div className="flex flex-col p-3 border-b border-slate-600/50">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold text-slate-100">Input JSON / Python-like</h2>
+              <h2 className={`text-xl font-semibold ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+                Input JSON / Python-like
+              </h2>
               <div className="flex items-center space-x-2">
+                <JsonSearch
+                  content={rawJson}
+                  onHighlight={setSearchMatches}
+                  className="mr-2"
+                  forceVisible={showSearch}
+                  onVisibilityChange={setShowSearch}
+                />
                 <Button
                   onClick={handleToggleTextWrap}
                   variant="secondary"
@@ -363,22 +550,16 @@ const App: React.FC = () => {
             className={`flex-grow w-full h-full ${textAreaMinHeight}`}
             onClearHighlights={clearAiHighlights}
             isTextWrapped={isTextWrapped}
+            searchMatches={searchMatches}
           />
         </div>
 
-        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50 relative">
-          {/* AI Loading Indicator - Fixed at top center of output box */}
-          {isAiLoading && (
-            <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-30">
-              <div className="bg-slate-700/95 backdrop-blur-md rounded-lg px-4 py-2 shadow-xl border border-slate-600/60">
-                <AiLoadingIndicator />
-              </div>
-            </div>
-          )}
-          
+        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50">
           <div className="p-3 border-b border-slate-600/50">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold text-slate-100">Formatted Output</h2>
+              <h2 className={`text-xl font-semibold ${
+                theme === 'dark' ? 'text-slate-100' : 'text-gray-900'
+              }`}>Formatted Output</h2>
               <div className="flex items-center space-x-2">
                 {showCopiedMessage && <span className="text-xs text-green-400 mr-1 animate-pulse">Copied!</span>}
                 <Button
@@ -391,6 +572,9 @@ const App: React.FC = () => {
                   title={isTextWrapped ? "Unwrap text" : "Wrap text"}
                 >
                   {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
+                </Button>
+                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !formattedJson} title="Compact/Minify JSON">
+                  <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 
                   onClick={handleCopyOutput} 
@@ -416,12 +600,20 @@ const App: React.FC = () => {
                     <DocumentArrowDownIcon className="w-4 h-4" />
                   </Button>
                   {isSaveDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-40 bg-slate-600/80 backdrop-blur-md border border-slate-500/50 rounded-md shadow-lg py-1 z-10">
-                      {(['txt', 'json', 'py', 'xml'] as const).map((fmt) => (
+                    <div className={`absolute right-0 mt-2 w-48 backdrop-blur-md border rounded-md shadow-lg py-1 z-10 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-600/80 border-slate-500/50' 
+                        : 'bg-white/80 border-gray-200'
+                    }`}>
+                      {(['txt', 'json', 'py', 'xml', 'yaml', 'csv', 'toml', 'md'] as const).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => handleSaveOutput(fmt)}
-                          className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-500/50 transition-colors"
+                          className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                            theme === 'dark'
+                              ? 'text-slate-200 hover:bg-slate-500/50'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
                           disabled={isLoading || !canSave}
                           title={`Save as .${fmt}`}
                         >
@@ -436,7 +628,9 @@ const App: React.FC = () => {
             <fieldset>
               <legend className="sr-only">Output Format</legend>
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-slate-300">Format as:</span>
+                <span className={`text-sm ${
+                  theme === 'dark' ? 'text-slate-300' : 'text-gray-700'
+                }`}>Format as:</span>
                 {(['json', 'python'] as OutputFormat[]).map((format) => (
                   <label key={format} className="flex items-center space-x-1 cursor-pointer">
                     <input
@@ -447,7 +641,9 @@ const App: React.FC = () => {
                       onChange={() => setSelectedOutputFormat(format)}
                       className="form-radio h-4 w-4 text-indigo-400 bg-slate-600/50 border-slate-500/70 focus:ring-indigo-500 focus:ring-offset-slate-700/30"
                     />
-                    <span className="text-sm text-slate-200">
+                    <span className={`text-sm ${
+                      theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
+                    }`}>
                       {format === 'json' ? 'Standard JSON' : 'Python dict/list'}
                     </span>
                   </label>
@@ -456,12 +652,12 @@ const App: React.FC = () => {
             </fieldset>
           </div>
 
-          {isLoading && !isAiLoading && (
+          {(isLoading || isAiLoading) && (
             <div className="flex-grow flex items-center justify-center">
-              <LoadingSpinner />
+              {isAiLoading ? <AiLoadingIndicator /> : <LoadingSpinner />}
             </div>
           )}
-          {!isLoading && error && (
+          {!isLoading && !isAiLoading && error && (
             <div className="p-4">
               <Alert type={error.isAiError ? "warning" : "error"} title={error.title}>
                 {error.message}
@@ -469,7 +665,7 @@ const App: React.FC = () => {
               </Alert>
             </div>
           )}
-          {!isLoading && !error && formattedJson && (
+          {!isLoading && !isAiLoading && !error && formattedJson && (
             <>
               <JsonOutput 
                 data={formattedJson} 
@@ -477,6 +673,7 @@ const App: React.FC = () => {
                 aiChanges={aiChanges}
                 showAiHighlights={showAiHighlights}
                 isTextWrapped={isTextWrapped}
+                searchMatches={searchMatches}
               />
               <div className="p-3 border-t border-slate-600/50">
                 <JsonStats 
@@ -486,20 +683,39 @@ const App: React.FC = () => {
               </div>
             </>
           )}
-          {!isLoading && !error && !formattedJson && (
-             <div className={`flex-grow flex items-center justify-center text-slate-400 ${textAreaMinHeight}`}>
+          {!isLoading && !isAiLoading && !error && !formattedJson && (
+             <div className={`flex-grow flex items-center justify-center ${
+               theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
+             } ${textAreaMinHeight}`}>
                 <p>{rawJson.trim() ? "Output will appear here once processed." : "Output will appear here."}</p>
              </div>
           )}
         </div>
       </main>
 
+      {/* Drag & Drop Overlay */}
+      {isDragOver && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 pointer-events-none">
+          <div className={`text-center p-8 rounded-lg border-2 border-dashed border-indigo-400 ${
+            theme === 'dark' ? 'bg-slate-800/90 text-slate-200' : 'bg-white/90 text-gray-800'
+          }`}>
+            <ArrowUpTrayIcon className="w-16 h-16 mx-auto mb-4 text-indigo-400" />
+            <h3 className="text-xl font-semibold mb-2">Drop your file here</h3>
+            <p className="text-sm opacity-75">Supports .json, .txt, .py, .md files</p>
+          </div>
+        </div>
+      )}
+
       <section className="mt-8 mb-4 text-slate-300" aria-labelledby="features-heading">
         <h3 id="features-heading" className="text-lg font-semibold text-center mb-3 text-slate-100">Free Online JSON Formatter & Validator Features</h3>
-        <div className="grid md:grid-cols-2 gap-x-6 gap-y-4 max-w-3xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-x-4 gap-y-4 max-w-5xl mx-auto">
           <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
             <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><CogIcon className="w-4 h-4 mr-2 text-slate-400"/>JSON Basic Clean</h4>
             <p className="text-xs text-slate-400">Instant JSON formatter and validator with local fixes for common syntax issues like Python's True/False/None, missing quotes around keys, single-quoted strings, and trailing commas. Fast and offline JSON cleaning.</p>
+          </div>
+          <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
+            <h4 className="font-semibold text-slate-100 mb-1 flex items-center"><CompressIcon className="w-4 h-4 mr-2 text-blue-400"/>JSON Compact/Minify</h4>
+            <p className="text-xs text-slate-400">Minify and compress JSON output by removing all unnecessary whitespace, line breaks, and indentation. Perfect for production environments where file size matters. Works with both JSON and Python-like data structures.</p>
           </div>
           {aiFeaturesPotentiallyEnabled && (
             <div className="bg-slate-700/20 backdrop-blur-md p-3 rounded-md shadow border border-slate-600/40">
@@ -510,15 +726,29 @@ const App: React.FC = () => {
         </div>
         
         <div className="mt-6 text-center max-w-4xl mx-auto">
-          <h4 className="text-md font-medium text-slate-200 mb-2">Why Choose Our JSON Formatter Tool?</h4>
-          <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            Format JSON online instantly with our free JSON beautifier and validator. Clean malformed JSON data, validate JSON syntax, and convert between JSON and Python formats. 
+          <h4 className={`text-md font-medium mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+            Why Choose Our JSON Formatter Tool?
+          </h4>
+          <p className={`text-sm leading-relaxed mb-4 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+            Format JSON online instantly with our free JSON beautifier and validator. Clean malformed JSON data, validate JSON syntax, compact/minify JSON for production, and convert between JSON and Python formats. 
             Perfect JSON tool for developers, data analysts, and anyone working with JSON files. No signup required - start formatting JSON now!
           </p>
           
-
-
-
+          {/* Keyboard Shortcuts Info */}
+          <div className={`text-xs mt-4 p-3 rounded-md ${theme === 'dark' ? 'bg-slate-700/20 text-slate-400' : 'bg-gray-100 text-gray-600'}`}>
+            <h5 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-300' : 'text-gray-700'}`}>Keyboard Shortcuts:</h5>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-left">
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+Enter</kbd> Format</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+K</kbd> Clear</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+F</kbd> Search</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+Shift+C</kbd> Copy Output</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+O</kbd> Upload File</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+B</kbd> Basic Clean</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+M</kbd> Compact Output</span>
+              <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+I</kbd> AI Clean</span>
+            </div>
+            <p className="text-xs mt-2 opacity-75">Drag & drop files anywhere on the page to upload instantly!</p>
+          </div>
         </div>
       </section>
 
@@ -528,7 +758,7 @@ const App: React.FC = () => {
             <strong>AIjsonformatter</strong> - Free Online JSON Formatter, Validator & Cleaner
           </p>
           <p className="text-xs text-slate-400">
-            Format JSON • Validate JSON • Clean JSON • Beautify JSON • Python to JSON Converter
+            Format JSON • Validate JSON • Clean JSON • Beautify JSON • Compact JSON • Python to JSON Converter
           </p>
         </div>
         

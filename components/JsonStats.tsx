@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from '../hooks/useTheme';
 
 interface JsonStatsProps {
   originalText: string;
@@ -11,6 +12,7 @@ export const JsonStats: React.FC<JsonStatsProps> = ({
   formattedText, 
   className 
 }) => {
+  const { theme } = useTheme();
   const calculateStats = (text: string) => {
     const bytes = new Blob([text]).size;
     const lines = text ? text.split('\n').length : 0;
@@ -36,16 +38,18 @@ export const JsonStats: React.FC<JsonStatsProps> = ({
   const showComparison = originalText && formattedText && originalText !== formattedText;
 
   return (
-    <div className={`text-xs text-slate-400 ${className || ''}`}>
+    <div className={`text-xs ${
+      theme === 'dark' ? 'text-slate-400' : 'text-gray-600'
+    } ${className || ''}`}>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         <span>
-          <strong className="text-slate-300">Characters:</strong> {formattedStats.characters.toLocaleString()}
+          <strong className={theme === 'dark' ? 'text-slate-300' : 'text-gray-800'}>Characters:</strong> {formattedStats.characters.toLocaleString()}
         </span>
         <span>
-          <strong className="text-slate-300">Lines:</strong> {formattedStats.lines.toLocaleString()}
+          <strong className={theme === 'dark' ? 'text-slate-300' : 'text-gray-800'}>Lines:</strong> {formattedStats.lines.toLocaleString()}
         </span>
         <span>
-          <strong className="text-slate-300">Size:</strong> {formattedStats.kb} KB
+          <strong className={theme === 'dark' ? 'text-slate-300' : 'text-gray-800'}>Size:</strong> {formattedStats.kb} KB
         </span>
         {showComparison && compressionRatio && (
           <span className={`${Number(compressionRatio) > 0 ? 'text-green-400' : 'text-red-400'}`}>

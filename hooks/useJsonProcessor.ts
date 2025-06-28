@@ -223,6 +223,53 @@ export const useJsonProcessor = () => {
     return cleaned;
   }, [clearAiHighlights]);
 
+  const compactJson = useCallback(async (dataString: string): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+    setPendingAiConversionToJSON(false);
+    setLastAiInputForPython(null); 
+    setRawJsonWasSourceOfLVPJO(false);
+    
+    // Clear AI highlights since we're doing compacting
+    clearAiHighlights();
+
+    try {
+      // Try to parse as JSON first
+      let parsed: any;
+      try {
+        parsed = JSON.parse(dataString);
+      } catch (jsonError) {
+        // If JSON parsing fails, try to evaluate as Python-like data
+        try {
+          // Basic Python to JSON conversion for compacting
+          let pythonLikeData = dataString
+            .replace(/\bTrue\b/g, 'true')
+            .replace(/\bFalse\b/g, 'false')
+            .replace(/\bNone\b/g, 'null')
+            .replace(/'/g, '"'); // Convert single quotes to double quotes
+          
+          parsed = JSON.parse(pythonLikeData);
+        } catch (pythonError) {
+          throw new Error("Input must be valid JSON or Python-like data structure to compact.");
+        }
+      }
+      
+      // Compact/minify to JSON (no spacing, no newlines)
+      const compacted = JSON.stringify(parsed);
+      
+      setIsLoading(false);
+      return compacted;
+    } catch (parseError: any) {
+      setIsLoading(false);
+      setError({
+        title: "Cannot Compact Data",
+        message: (parseError as Error).message || "Input must be valid JSON or Python-like data to compact.",
+        suggestion: "Use 'Basic Clean' or 'AI Clean' first to fix syntax errors, then try compacting.",
+      });
+      throw parseError;
+    }
+  }, [clearAiHighlights]);
+
   const tryAiFix = useCallback(async (jsonString: string, outputFormat: OutputFormat): Promise<string | null> => {
     setIsAiLoading(true);
     setError(null);
@@ -347,6 +394,7 @@ export const useJsonProcessor = () => {
     processJson, 
     tryLocalFix, 
     tryAiFix,
+    compactJson,
     pendingAiConversionToJSON,
     clearPendingAiConversion,
     forceProcessJson,
