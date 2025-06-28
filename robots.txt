@@ -1,13 +1,53 @@
 User-agent: *
 Allow: /
 
-# Optimize crawling
+# Prioritize important pages
+Allow: /index.html
+Allow: /favicon.svg
+Allow: /og-image.svg
+Allow: /apple-touch-icon.svg
+Allow: /site.webmanifest
+
+# Optimize crawling frequency
 Crawl-delay: 1
+
+# Specific bot optimizations
+User-agent: Googlebot
+Crawl-delay: 0.5
+Allow: /
+
+User-agent: Bingbot
+Crawl-delay: 1
+Allow: /
+
+User-agent: Slurp
+Crawl-delay: 2
+Allow: /
+
+# Block unnecessary files and paths
+Disallow: /api/
+Disallow: /*.log$
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /.vite/
+Disallow: /dist/
+Disallow: /*.json$
+Disallow: /test-*
+Disallow: /.*
 
 # Sitemaps
 Sitemap: https://aijsonformatter.site/sitemap.xml
 
-# Block unnecessary files
-Disallow: /api/
-Disallow: *.log$
-Disallow: /node_modules/
+# Additional metadata
+# Host: https://aijsonformatter.site
+# Preferred domain: aijsonformatter.site
+
+# Allow all major search engines
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
