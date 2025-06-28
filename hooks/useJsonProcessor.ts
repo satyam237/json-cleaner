@@ -245,8 +245,12 @@ export const useJsonProcessor = () => {
           let pythonLikeData = dataString
             .replace(/\bTrue\b/g, 'true')
             .replace(/\bFalse\b/g, 'false')
-            .replace(/\bNone\b/g, 'null')
-            .replace(/'/g, '"'); // Convert single quotes to double quotes
+            .replace(/\bNone\b/g, 'null');
+          
+          // Properly handle single quotes - only replace string delimiters, not apostrophes
+          pythonLikeData = pythonLikeData.replace(/'((?:\\.|[^'\\])*)'/g, (match, group1) => {
+            return `"${group1.replace(/"/g, '\\"')}"`;
+          });
           
           parsed = JSON.parse(pythonLikeData);
         } catch (pythonError) {
