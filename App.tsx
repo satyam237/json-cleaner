@@ -687,6 +687,239 @@ const App: React.FC = () => {
         </div>
       </section>
 
+      {/* FAQ Section for SEO */}
+      <section className="mt-8 mb-6" aria-labelledby="faq-heading">
+        <div className="max-w-4xl mx-auto">
+          <h3 id="faq-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            Frequently Asked Questions - JSON Formatter & Validator
+          </h3>
+          <div className="space-y-4">
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                What is a JSON formatter and why do I need it?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                A JSON formatter is a tool that takes unformatted or minified JSON data and converts it into a human-readable format with proper indentation, line breaks, and syntax highlighting. You need it to debug APIs, validate JSON structure, fix syntax errors, and make JSON data easier to read and understand. Our formatter also validates JSON syntax and provides error correction.
+              </p>
+            </details>
+            
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                How do I validate JSON online for free?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Simply paste your JSON data into our online validator above, and it will instantly check for syntax errors, missing brackets, incorrect quotes, and other common issues. Our tool provides detailed error messages and suggestions to help you fix any problems. No registration required!
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Can this tool fix broken or malformed JSON?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Yes! Our tool offers both Basic Clean (fixes common issues like Python literals, missing quotes, trailing commas) and AI Clean (advanced error correction for complex malformed data) to automatically repair broken JSON. It handles most common JSON syntax errors automatically.
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Does this work with Python dictionaries and lists?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Absolutely! Our tool can convert Python dictionary and list syntax to proper JSON format, handling Python literals like True/False/None and converting them to valid JSON equivalents (true/false/null). Perfect for data scientists working with both Python and JSON.
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Is this JSON formatter tool completely free?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Yes, AIjsonformatter is completely free to use with no signup required, no limits on usage, and no hidden fees. All features including AI-powered cleaning, file uploads, and exports are available at no cost.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="mt-8 mb-6" aria-labelledby="use-cases-heading">
+        <div className="max-w-5xl mx-auto">
+          <h3 id="use-cases-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            JSON Formatter Use Cases & Examples
+          </h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>API Development & Testing</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format API responses, validate request payloads, and debug REST API calls. Essential for developers working with JSON APIs.
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Data Analysis & Cleaning</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Clean messy JSON data from web scraping, convert Python dictionaries to JSON, and prepare data for analysis.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Configuration Files</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format and validate JSON configuration files for applications, validate package.json files, and fix syntax errors.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Database Export/Import</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format JSON exports from databases, validate data before importing, and convert between different data formats.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Educational & Learning</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Learn JSON structure, understand JSON syntax, practice with real data, and debug JSON parsing errors.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Production Optimization</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Minify JSON for production deployment, reduce file sizes, and optimize API payload sizes for better performance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How-to Tutorial Section */}
+      <section className="mt-8 mb-6" aria-labelledby="tutorial-heading">
+        <div className="max-w-4xl mx-auto">
+          <h3 id="tutorial-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            How to Use Our JSON Formatter - Step by Step Guide
+          </h3>
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">1</span>
+                Paste or Upload Your JSON Data
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Paste your JSON text directly into the input area above, or drag & drop a .json file. You can also upload .txt, .py, or .md files containing JSON data.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">2</span>
+                Choose Output Format
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Select "Standard JSON" for JSON output or "Python dict/list" for Python-compatible format. The tool automatically processes your input.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">3</span>
+                Fix Errors (If Needed)
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                If you see errors, click "Basic Clean" for common fixes or "AI Clean" for advanced error correction. Our tool handles most JSON syntax issues automatically.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">4</span>
+                Copy, Download, or Minify
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Copy the formatted result, download in various formats (JSON, YAML, CSV, XML, etc.), or use the compress button to minify for production use.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section */}
+      <section className="mt-8 mb-6" aria-labelledby="comparison-heading">
+        <div className="max-w-5xl mx-auto">
+          <h3 id="comparison-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            Why Choose AIjsonformatter Over Other JSON Tools?
+          </h3>
+          <div className="overflow-x-auto">
+            <table className={`w-full border-collapse border ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+              <thead>
+                <tr className={theme === 'dark' ? 'bg-slate-700/30' : 'bg-gray-100'}>
+                  <th className={`border p-3 text-left ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>Feature</th>
+                  <th className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>AIjsonformatter</th>
+                  <th className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>Other Tools</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>AI-Powered Error Correction</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Python Dictionary Support</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Multiple Export Formats</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-yellow-400 font-semibold">Limited</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Drag & Drop File Upload</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Keyboard Shortcuts</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>No Registration Required</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-yellow-400 font-semibold">Varies</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <footer className="mt-8 pt-4 border-t border-slate-700/50 text-center text-sm text-slate-400">
         <div className="mb-4">
           <p className="text-sm text-slate-300 mb-1">

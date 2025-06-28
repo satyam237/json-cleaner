@@ -22,4 +22,97 @@ pre, code {
   -o-tab-size: 2;
 }
 
+/* Performance optimizations for Core Web Vitals */
+img, svg {
+  max-width: 100%;
+  height: auto;
+  loading: lazy;
+}
+
+/* Reduce layout shift */
+button, input, textarea {
+  font-family: inherit;
+}
+
+/* Optimize font loading */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+  src: local('Inter'), url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+}
+
+/* Optimize animations for performance */
+* {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Improve text rendering */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus indicators for keyboard navigation */
+button:focus-visible, 
+input:focus-visible, 
+textarea:focus-visible,
+details summary:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Optimize scrolling performance */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Additional base styles for SEO content */
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+}
+
+p {
+  line-height: 1.6;
+  margin-bottom: 1em;
+}
+
+/* Table styles for comparison section */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Details/summary styles for FAQ */
+details {
+  transition: all 0.2s ease;
+}
+
+details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+/* Print styles for better accessibility */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
 /* Additional base styles can be added here if needed */ 
