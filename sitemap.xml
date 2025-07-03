@@ -2,49 +2,59 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
         xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  
+  <!-- Main Homepage - Highest Priority -->
   <url>
     <loc>https://aijsonformatter.site/</loc>
     <lastmod>2025-01-28</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://aijsonformatter.site/og-image.svg</image:loc>
-      <image:title>AIjsonformatter - Free JSON Formatter & Validator</image:title>
-      <image:caption>Professional JSON formatter, validator and beautifier tool</image:caption>
+      <image:title>AIjsonformatter - #1 Free JSON Formatter & Validator Online</image:title>
+      <image:caption>Best JSON formatter tool for developers - format, validate, and beautify JSON instantly</image:caption>
     </image:image>
   </url>
   
-  <!-- Virtual pages/sections for SEO -->
+  <!-- Main Tool Landing Pages for SEO -->
   <url>
-    <loc>https://aijsonformatter.site/#json-formatter</loc>
+    <loc>https://aijsonformatter.site/#json-formatter-online</loc>
     <lastmod>2025-01-28</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  
+  <url>
+    <loc>https://aijsonformatter.site/#json-validator-free</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  
+  <url>
+    <loc>https://aijsonformatter.site/#json-beautifier-tool</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   
   <url>
-    <loc>https://aijsonformatter.site/#json-validator</loc>
+    <loc>https://aijsonformatter.site/#best-json-formatter</loc>
     <lastmod>2025-01-28</lastmod>
-    <changefreq>monthly</changefreq>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   
+  <!-- Secondary Tool Pages -->
   <url>
-    <loc>https://aijsonformatter.site/#json-beautifier</loc>
+    <loc>https://aijsonformatter.site/#json-minifier-online</loc>
     <lastmod>2025-01-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://aijsonformatter.site/#json-minifier</loc>
-    <lastmod>2025-01-28</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  
-  <url>
-    <loc>https://aijsonformatter.site/#python-to-json</loc>
+    <loc>https://aijsonformatter.site/#python-to-json-converter</loc>
     <lastmod>2025-01-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
@@ -54,14 +64,22 @@
     <loc>https://aijsonformatter.site/#ai-json-cleaner</loc>
     <lastmod>2025-01-28</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   
+  <url>
+    <loc>https://aijsonformatter.site/#json-parser-online</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  
+  <!-- Content/Info Pages -->
   <url>
     <loc>https://aijsonformatter.site/#json-faq</loc>
     <lastmod>2025-01-28</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   
   <url>
@@ -70,4 +88,34 @@
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
+  
+  <url>
+    <loc>https://aijsonformatter.site/#json-examples</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Long-tail Keyword Pages -->
+  <url>
+    <loc>https://aijsonformatter.site/#format-json-online-free</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://aijsonformatter.site/#validate-json-syntax</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <url>
+    <loc>https://aijsonformatter.site/#fix-malformed-json</loc>
+    <lastmod>2025-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.65</priority>
+  </url>
+  
 </urlset>

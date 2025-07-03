@@ -1,53 +1,81 @@
 User-agent: *
 Allow: /
 
-# Prioritize important pages
+# Prioritize important pages for faster indexing
 Allow: /index.html
 Allow: /favicon.svg
+Allow: /favicon-192.png
+Allow: /favicon-512.png
 Allow: /og-image.svg
 Allow: /apple-touch-icon.svg
 Allow: /site.webmanifest
+Allow: /sitemap.xml
+Allow: /robots.txt
 
-# Optimize crawling frequency
-Crawl-delay: 1
+# Optimize crawling frequency for different bots
+Crawl-delay: 0.5
 
-# Specific bot optimizations
+# Specific optimizations for major search engines
 User-agent: Googlebot
+Crawl-delay: 0.2
+Allow: /
+
+User-agent: Bingbot  
 Crawl-delay: 0.5
 Allow: /
 
-User-agent: Bingbot
+User-agent: Slurp
 Crawl-delay: 1
 Allow: /
 
-User-agent: Slurp
-Crawl-delay: 2
+User-agent: DuckDuckBot
+Crawl-delay: 0.5
 Allow: /
 
-# Block unnecessary files and paths
+User-agent: YandexBot
+Crawl-delay: 1
+Allow: /
+
+User-agent: Baiduspider
+Crawl-delay: 1
+Allow: /
+
+User-agent: facebookexternalhit
+Crawl-delay: 0.1
+Allow: /
+
+User-agent: Twitterbot
+Crawl-delay: 0.1
+Allow: /
+
+# Block unnecessary files and paths that don't need indexing
 Disallow: /api/
 Disallow: /*.log$
 Disallow: /node_modules/
 Disallow: /.git/
 Disallow: /.vite/
 Disallow: /dist/
-Disallow: /*.json$
+Disallow: /package*.json$
 Disallow: /test-*
 Disallow: /.*
+Disallow: /vercel.json
+Disallow: /tsconfig.json
+Disallow: /vite.config.ts
 
-# Sitemaps
+# Allow indexing of important files
+Allow: /metadata.json
+
+# Sitemaps - Multiple references for better discoverability
 Sitemap: https://aijsonformatter.site/sitemap.xml
 
-# Additional metadata
+# Host preference (helps with canonical URLs)
 # Host: https://aijsonformatter.site
-# Preferred domain: aijsonformatter.site
 
-# Allow all major search engines
-User-agent: DuckDuckBot
-Allow: /
+# Additional performance hints
+Request-rate: 1/1s
 
-User-agent: YandexBot
-Allow: /
-
-User-agent: Baiduspider
-Allow: /
+# Clean URLs preference
+Clean-param: utm_source
+Clean-param: utm_medium
+Clean-param: utm_campaign
+Clean-param: ref
