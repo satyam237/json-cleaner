@@ -2,7 +2,7 @@
 const { GoogleGenAI } = require("@google/genai");
 const { GEMINI_MODEL_NAME } = require('../constants.cjs.js');
 
-const EFFECTIVE_GEMINI_MODEL_NAME = GEMINI_MODEL_NAME || "gemini-2.5-flash-preview-04-17";
+const EFFECTIVE_GEMINI_MODEL_NAME = GEMINI_MODEL_NAME || "gemini-2.5-flash";
 
 module.exports = async function handler(req, res) {
   try {

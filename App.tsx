@@ -98,32 +98,48 @@ const App: React.FC = () => {
     clearAiHighlights,
     aiChanges,
     showAiHighlights,
+    lastValidParsedJsonObject,
+    setError
   } = useJsonProcessor();
 
+  // Create stable reference to processJson to avoid race conditions
+  const processJsonRef = useRef(processJson);
+  processJsonRef.current = processJson;
 
+  // Track when we should reset compact mode
+  const shouldResetCompact = useRef(false);
 
   const handleInputChange = useCallback((value: string) => {
     setRawJson(value);
   }, []);
 
-  // Handle rawJson changes with debouncing
+  // Reset compact mode only when explicitly needed
+  const resetCompactMode = useCallback(() => {
+    setIsOutputCompact(false);
+    setCompactedOutput('');
+  }, []);
+
+  // Handle rawJson changes with debouncing - NO processJson dependency
   useEffect(() => {
     const handler = setTimeout(() => {
+      // Reset compact mode when input changes
+      resetCompactMode();
+      
       if (rawJson.trim() === '') {
-        processJson('', selectedOutputFormat);
+        processJsonRef.current('', selectedOutputFormat);
       } else {
-        processJson(rawJson, selectedOutputFormat);
+        processJsonRef.current(rawJson, selectedOutputFormat);
       }
     }, 300);
     return () => clearTimeout(handler);
-  }, [rawJson, selectedOutputFormat, processJson]);
+  }, [rawJson, selectedOutputFormat, resetCompactMode]);
 
-  // Handle format switching immediately (no debouncing needed)
+  // Handle format switching immediately - NO processJson dependency  
   useEffect(() => {
-    setIsOutputCompact(false); // Reset compact mode when format changes
-    setCompactedOutput(''); // Clear compacted output
-    processJson(rawJson, selectedOutputFormat);
-  }, [rawJson, selectedOutputFormat, processJson]);
+    // Reset compact mode when format changes
+    resetCompactMode();
+    processJsonRef.current(rawJson, selectedOutputFormat);
+  }, [selectedOutputFormat, rawJson, resetCompactMode]);
 
    useEffect(() => {
     if (pendingAiConversionToJSON && rawJson.trim() !== '') {
@@ -134,12 +150,8 @@ const App: React.FC = () => {
     }
   }, [pendingAiConversionToJSON, rawJson, tryAiFix, clearPendingAiConversion]);
 
-
-
-
   const handleLocalFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     const fixed = await tryLocalFix(rawJson);
     setRawJson(fixed); 
     if (fixed.trim() === '') {
@@ -147,32 +159,42 @@ const App: React.FC = () => {
     } else {
       processJson(fixed, selectedOutputFormat);
     }
-  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat]);
+  }, [rawJson, tryLocalFix, processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleAiFix = useCallback(async () => {
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     await tryAiFix(rawJson, selectedOutputFormat);
-  }, [rawJson, tryAiFix, selectedOutputFormat]);
+  }, [rawJson, tryAiFix, selectedOutputFormat, resetCompactMode]);
 
-  const handleCompact = useCallback(async () => {
+  const handleCompact = useCallback(() => {
     try {
       // Work on the current output (formattedJson), not the input
-      if (!formattedJson) {
-        console.warn('No formatted output to compact');
+      if (!formattedJson?.trim()) {
+        setError({
+          title: "No Data to Compact",
+          message: "There is no formatted output to compact.",
+          suggestion: "Please process some JSON data first, then try compacting."
+        });
         return;
       }
       
-      const compacted = await compactJson(formattedJson);
+      const compacted = compactJson(formattedJson);
       setCompactedOutput(compacted);
       setIsOutputCompact(true);
-      // Switch to JSON format since compacting always produces JSON
-      setSelectedOutputFormat('json');
-    } catch (err) {
-      // Error is already handled by compactJson
+      
+      // Clear any previous compact-related errors since compacting succeeded
+      if (error?.title === "No Data to Compact" || error?.title === "Cannot Compact Data") {
+        setError(null);
+      }
+    } catch (err: any) {
       console.error('Compact failed:', err);
+      setError({
+        title: "Cannot Compact Data", 
+        message: err.message || "Failed to compact the current output.",
+        suggestion: "Try processing the input data again, then compact."
+      });
     }
-  }, [formattedJson, compactJson]);
+  }, [formattedJson, compactJson, error, setError]);
 
   const handleCopyOutput = useCallback(async () => {
     const outputToCopy = isOutputCompact ? compactedOutput : formattedJson;
@@ -199,10 +221,9 @@ const App: React.FC = () => {
 
   const handleClear = useCallback(() => {
     setRawJson('');
-    setIsOutputCompact(false); // Reset compact mode
-    setCompactedOutput(''); // Clear compacted output
+    resetCompactMode(); // Reset compact mode
     processJson('', selectedOutputFormat); 
-  }, [processJson, selectedOutputFormat]);
+  }, [processJson, selectedOutputFormat, resetCompactMode]);
 
   const handleToggleTextWrap = useCallback(() => {
     setIsTextWrapped(prev => !prev);
@@ -268,204 +289,73 @@ const App: React.FC = () => {
 
   const handleSaveOutput = useCallback((format: 'txt' | 'json' | 'py' | 'xml' | 'yaml' | 'csv' | 'toml' | 'md') => {
     setIsSaveDropdownOpen(false);
-    
-    const currentOutput = isOutputCompact ? compactedOutput : formattedJson;
-    let contentToSave = currentOutput || '';
-    let isContentPotentiallyEmpty = !currentOutput;
 
-    let filename = 'output';
+    const currentOutput = isOutputCompact ? compactedOutput : formattedJson;
+    const objectToConvert = lastValidParsedJsonObject;
+
+    let contentToSave = '';
+    let filename = `output.${format}`;
     let mimeType = 'text/plain';
 
-    switch (format) {
-      case 'txt':
-        filename += '.txt';
+    try {
+      if (format === 'txt') {
+        contentToSave = currentOutput || '';
         mimeType = 'text/plain';
-        break;
-      case 'json':
-        filename += '.json';
+      } else if (isOutputCompact && format === 'json') {
+        contentToSave = compactedOutput;
         mimeType = 'application/json';
-        if ((selectedOutputFormat === 'json' || isOutputCompact) && currentOutput) {
-          contentToSave = currentOutput;
-          isContentPotentiallyEmpty = false;
-        } else { 
-          try { 
-            const parsedRaw = JSON.parse(rawJson);
-            contentToSave = JSON.stringify(parsedRaw, null, 2);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            if (currentOutput && selectedOutputFormat === 'python') {
-              alert("Original input is not valid JSON. Saving current Python output as .json instead (may not be true JSON).");
-              contentToSave = currentOutput; 
-              isContentPotentiallyEmpty = !currentOutput;
-            } else if (!currentOutput && !rawJson.trim()) {
-                alert("Nothing to save as JSON."); return;
-            } else {
-                alert("Original input is not valid JSON. Cannot save as structured JSON."); return;
-            }
-          }
-        }
-        break;
-      case 'py':
-        filename += '.py';
-        mimeType = 'application/python';
-        if (selectedOutputFormat === 'python' && currentOutput) {
-          contentToSave = currentOutput;
-           isContentPotentiallyEmpty = false;
-        } else if (currentOutput) { 
-          try {
-            const parsedFormatted = JSON.parse(currentOutput);
-            contentToSave = formatJsObjectToPythonString(parsedFormatted);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Current output is not valid JSON. Cannot convert to Python.");
-            return;
-          }
-        } else if (!rawJson.trim()) {
-            alert("Nothing to save as Python."); return;
+      } else if (!objectToConvert) {
+        if (format === 'py' && selectedOutputFormat === 'python' && formattedJson) {
+          contentToSave = formattedJson;
+          mimeType = 'application/python';
         } else {
-             alert("No valid content to convert to Python."); return;
-        }
-        break;
-      case 'xml':
-        filename += '.xml';
-        mimeType = 'application/xml';
-        let objectToConvert: any = null;
-        if (rawJson.trim()) {
-            try {
-              objectToConvert = JSON.parse(rawJson); 
-            } catch (e) { /* ignore attempt on raw */ }
-        }
-        if (!objectToConvert && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            objectToConvert = JSON.parse(currentOutput); 
-          } catch (e2) { /* ignore attempt on formatted */ }
-        }
-        
-        if (objectToConvert) {
-          contentToSave = jsonToBasicXml(objectToConvert);
-          isContentPotentiallyEmpty = false;
-        } else {
-          alert("Cannot convert to XML. Input data is not valid JSON.");
+          alert(`Cannot save as ${format.toUpperCase()}. The input data is not valid or has not been processed yet.`);
           return;
         }
-        break;
-      case 'yaml':
-        filename += '.yaml';
-        mimeType = 'application/x-yaml';
-        let yamlObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            yamlObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
+      } else {
+        switch (format) {
+          case 'json':
+            contentToSave = JSON.stringify(objectToConvert, null, 2);
+            mimeType = 'application/json';
+            break;
+          case 'py':
+            contentToSave = formatJsObjectToPythonString(objectToConvert);
+            mimeType = 'application/python';
+            break;
+          case 'xml':
+            contentToSave = jsonToBasicXml(objectToConvert);
+            mimeType = 'application/xml';
+            break;
+          case 'yaml':
+            contentToSave = ExportFormatConverter.toYAML(objectToConvert);
+            mimeType = 'application/x-yaml';
+            break;
+          case 'csv':
+            contentToSave = ExportFormatConverter.toCSV(objectToConvert);
+            mimeType = 'text/csv';
+            break;
+          case 'toml':
+            contentToSave = ExportFormatConverter.toTOML(objectToConvert);
+            mimeType = 'application/toml';
+            break;
+          case 'md':
+            contentToSave = ExportFormatConverter.toMarkdownTable(objectToConvert);
+            mimeType = 'text/markdown';
+            break;
         }
-        if (!yamlObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            yamlObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (yamlObject) {
-          try {
-            contentToSave = ExportFormatConverter.toYAML(yamlObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to YAML: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to YAML. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'csv':
-        filename += '.csv';
-        mimeType = 'text/csv';
-        let csvObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            csvObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!csvObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            csvObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (csvObject) {
-          try {
-            contentToSave = ExportFormatConverter.toCSV(csvObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to CSV: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to CSV. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'toml':
-        filename += '.toml';
-        mimeType = 'application/toml';
-        let tomlObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            tomlObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!tomlObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            tomlObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (tomlObject) {
-          try {
-            contentToSave = ExportFormatConverter.toTOML(tomlObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to TOML: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to TOML. Input data is not valid JSON.");
-          return;
-        }
-        break;
-      case 'md':
-        filename += '.md';
-        mimeType = 'text/markdown';
-        let mdObject: any = null;
-        if (rawJson.trim()) {
-          try {
-            mdObject = JSON.parse(rawJson);
-          } catch (e) { /* ignore */ }
-        }
-        if (!mdObject && selectedOutputFormat === 'json' && currentOutput) {
-          try {
-            mdObject = JSON.parse(currentOutput);
-          } catch (e) { /* ignore */ }
-        }
-        if (mdObject) {
-          try {
-            contentToSave = ExportFormatConverter.toMarkdownTable(mdObject);
-            isContentPotentiallyEmpty = false;
-          } catch (e) {
-            alert("Failed to convert to Markdown table: " + e.message);
-            return;
-          }
-        } else {
-          alert("Cannot convert to Markdown table. Input data is not valid JSON.");
-          return;
-        }
-        break;
+      }
+    } catch (e: any) {
+      alert(`Failed to convert to ${format.toUpperCase()}: ${e.message}`);
+      return;
     }
 
-    if (isContentPotentiallyEmpty && !contentToSave.trim() && (format === 'txt' || (format === 'py' && selectedOutputFormat !== 'python') )) {
-        alert("No output to save.");
-        return;
+    if (!contentToSave.trim()) {
+      alert("Nothing to save.");
+      return;
     }
-    
+
     triggerDownload(contentToSave, filename, mimeType);
-  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat, rawJson]);
+  }, [formattedJson, compactedOutput, isOutputCompact, selectedOutputFormat, lastValidParsedJsonObject]);
 
   const textAreaMinHeight = "min-h-[300px] md:min-h-[calc(100vh-420px)]";
   const canSave = !!(rawJson.trim() || formattedJson.trim());
@@ -569,8 +459,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex space-x-3 items-start">
               <Button onClick={() => {
-                setIsOutputCompact(false); // Reset compact mode
-                setCompactedOutput(''); // Clear compacted output
+                resetCompactMode(); // Reset compact mode
                 forceProcessJson(rawJson, selectedOutputFormat);
               }} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading} className="w-full">
                 View
@@ -618,7 +507,7 @@ const App: React.FC = () => {
                 >
                   {isTextWrapped ? <UnwrapTextIcon className="w-4 h-4" /> : <WrapTextIcon className="w-4 h-4" />}
                 </Button>
-                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || (!formattedJson && !rawJson.trim())} title="Compact/Minify JSON">
+                <Button onClick={handleCompact} variant="secondary" ringOffsetClass="focus:ring-offset-slate-700/30" size="sm" disabled={isLoading || isAiLoading || !formattedJson?.trim()} title="Compact/Minify JSON">
                   <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 
@@ -794,6 +683,239 @@ const App: React.FC = () => {
               <span><kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+I</kbd> AI Clean</span>
             </div>
             <p className="text-xs mt-2 opacity-75">Drag & drop files anywhere on the page to upload instantly!</p>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section for SEO */}
+      <section className="mt-8 mb-6" aria-labelledby="faq-heading">
+        <div className="max-w-4xl mx-auto">
+          <h3 id="faq-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            Frequently Asked Questions - JSON Formatter & Validator
+          </h3>
+          <div className="space-y-4">
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                What is a JSON formatter and why do I need it?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                A JSON formatter is a tool that takes unformatted or minified JSON data and converts it into a human-readable format with proper indentation, line breaks, and syntax highlighting. You need it to debug APIs, validate JSON structure, fix syntax errors, and make JSON data easier to read and understand. Our formatter also validates JSON syntax and provides error correction.
+              </p>
+            </details>
+            
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                How do I validate JSON online for free?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Simply paste your JSON data into our online validator above, and it will instantly check for syntax errors, missing brackets, incorrect quotes, and other common issues. Our tool provides detailed error messages and suggestions to help you fix any problems. No registration required!
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Can this tool fix broken or malformed JSON?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Yes! Our tool offers both Basic Clean (fixes common issues like Python literals, missing quotes, trailing commas) and AI Clean (advanced error correction for complex malformed data) to automatically repair broken JSON. It handles most common JSON syntax errors automatically.
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Does this work with Python dictionaries and lists?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Absolutely! Our tool can convert Python dictionary and list syntax to proper JSON format, handling Python literals like True/False/None and converting them to valid JSON equivalents (true/false/null). Perfect for data scientists working with both Python and JSON.
+              </p>
+            </details>
+
+            <details className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <summary className={`font-semibold cursor-pointer ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                Is this JSON formatter tool completely free?
+              </summary>
+              <p className={`mt-2 text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Yes, AIjsonformatter is completely free to use with no signup required, no limits on usage, and no hidden fees. All features including AI-powered cleaning, file uploads, and exports are available at no cost.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="mt-8 mb-6" aria-labelledby="use-cases-heading">
+        <div className="max-w-5xl mx-auto">
+          <h3 id="use-cases-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            JSON Formatter Use Cases & Examples
+          </h3>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>API Development & Testing</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format API responses, validate request payloads, and debug REST API calls. Essential for developers working with JSON APIs.
+              </p>
+            </div>
+            
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Data Analysis & Cleaning</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Clean messy JSON data from web scraping, convert Python dictionaries to JSON, and prepare data for analysis.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Configuration Files</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format and validate JSON configuration files for applications, validate package.json files, and fix syntax errors.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Database Export/Import</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Format JSON exports from databases, validate data before importing, and convert between different data formats.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Educational & Learning</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Learn JSON structure, understand JSON syntax, practice with real data, and debug JSON parsing errors.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>Production Optimization</h4>
+              <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Minify JSON for production deployment, reduce file sizes, and optimize API payload sizes for better performance.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How-to Tutorial Section */}
+      <section className="mt-8 mb-6" aria-labelledby="tutorial-heading">
+        <div className="max-w-4xl mx-auto">
+          <h3 id="tutorial-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            How to Use Our JSON Formatter - Step by Step Guide
+          </h3>
+          <div className="space-y-4">
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">1</span>
+                Paste or Upload Your JSON Data
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Paste your JSON text directly into the input area above, or drag & drop a .json file. You can also upload .txt, .py, or .md files containing JSON data.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">2</span>
+                Choose Output Format
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Select "Standard JSON" for JSON output or "Python dict/list" for Python-compatible format. The tool automatically processes your input.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">3</span>
+                Fix Errors (If Needed)
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                If you see errors, click "Basic Clean" for common fixes or "AI Clean" for advanced error correction. Our tool handles most JSON syntax issues automatically.
+              </p>
+            </div>
+
+            <div className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-slate-700/20 border-slate-600/40' : 'bg-gray-100 border-gray-200'}`}>
+              <h4 className={`font-semibold mb-2 flex items-center ${theme === 'dark' ? 'text-slate-200' : 'text-gray-800'}`}>
+                <span className="bg-indigo-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-3">4</span>
+                Copy, Download, or Minify
+              </h4>
+              <p className={`text-sm ml-9 ${theme === 'dark' ? 'text-slate-400' : 'text-gray-600'}`}>
+                Copy the formatted result, download in various formats (JSON, YAML, CSV, XML, etc.), or use the compress button to minify for production use.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section */}
+      <section className="mt-8 mb-6" aria-labelledby="comparison-heading">
+        <div className="max-w-5xl mx-auto">
+          <h3 id="comparison-heading" className={`text-xl font-bold text-center mb-6 ${theme === 'dark' ? 'text-slate-100' : 'text-gray-900'}`}>
+            Why Choose AIjsonformatter Over Other JSON Tools?
+          </h3>
+          <div className="overflow-x-auto">
+            <table className={`w-full border-collapse border ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+              <thead>
+                <tr className={theme === 'dark' ? 'bg-slate-700/30' : 'bg-gray-100'}>
+                  <th className={`border p-3 text-left ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>Feature</th>
+                  <th className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>AIjsonformatter</th>
+                  <th className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600 text-slate-200' : 'border-gray-300 text-gray-800'}`}>Other Tools</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>AI-Powered Error Correction</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Python Dictionary Support</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Multiple Export Formats</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-yellow-400 font-semibold">Limited</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Drag & Drop File Upload</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>Keyboard Shortcuts</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-red-400 font-semibold">✗</span>
+                  </td>
+                </tr>
+                <tr className={theme === 'dark' ? 'bg-slate-700/10' : 'bg-gray-50'}>
+                  <td className={`border p-3 ${theme === 'dark' ? 'border-slate-600 text-slate-300' : 'border-gray-300 text-gray-700'}`}>No Registration Required</td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-green-400 font-semibold">✓</span>
+                  </td>
+                  <td className={`border p-3 text-center ${theme === 'dark' ? 'border-slate-600' : 'border-gray-300'}`}>
+                    <span className="text-yellow-400 font-semibold">Varies</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
