@@ -20,6 +20,17 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { AiLoadingIndicator } from './components/AiLoadingIndicator';
 import { ExportFormatConverter } from './lib/exportFormats';
 import { SparklesIcon, CogIcon, ClipboardDocumentIcon, XCircleIcon, ArrowUpTrayIcon, DocumentArrowDownIcon, WrapTextIcon, UnwrapTextIcon, SunIcon, MoonIcon, CompressIcon } from './constants';
+// Add icons for format and sort
+const FunnelIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h18M6 9.75h12M9 15h6" />
+  </svg>
+);
+const AlignRightIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 6.75h15m-9 4.5h9m-12 4.5h12" />
+  </svg>
+);
 
 // Helper to escape XML characters
 const escapeXml = (unsafe: string): string =>
@@ -57,6 +68,33 @@ const jsonToBasicXml = (data: any, tagName: string = 'root', indent: string = ''
 
 
 const App: React.FC = () => {
+  // Move all hooks to the top
+  const {
+    formattedJson,
+    error,
+    isLoading,
+    isAiLoading,
+    processJson,
+    tryLocalFix,
+    tryAiFix,
+    compactJson,
+    pendingAiConversionToJSON,
+    clearPendingAiConversion,
+    forceProcessJson,
+    clearAiHighlights,
+    aiChanges,
+    showAiHighlights,
+    lastValidParsedJsonObject,
+    setError
+  } = useJsonProcessor();
+
+  const { theme, toggleTheme } = useTheme();
+  const { isDragOver, dragHandlers } = useDragAndDrop({
+    onFileUpload: (content) => setRawJson(content),
+    accept: ['.json', '.txt', '.py', '.md']
+  });
+
+  // Now define all state and callbacks that use these variables
   const [rawJson, setRawJson] = useState<string>('');
   const [selectedOutputFormat, setSelectedOutputFormat] = useState<OutputFormat>('json');
   const [showCopiedMessage, setShowCopiedMessage] = useState<boolean>(false);
@@ -76,31 +114,51 @@ const App: React.FC = () => {
   // This could be set based on a config or just be true to always show AI buttons.
   const aiFeaturesPotentiallyEnabled = true;
 
-  // Initialize new hooks
-  const { theme, toggleTheme } = useTheme();
-  const { isDragOver, dragHandlers } = useDragAndDrop({
-    onFileUpload: (content) => setRawJson(content),
-    accept: ['.json', '.txt', '.py', '.md']
-  }); 
+  // Add at the top-level of App component:
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
-  const {
-    formattedJson,
-    error,
-    isLoading,
-    isAiLoading,
-    processJson,
-    tryLocalFix,
-    tryAiFix,
-    compactJson,
-    pendingAiConversionToJSON,
-    clearPendingAiConversion,
-    forceProcessJson,
-    clearAiHighlights,
-    aiChanges,
-    showAiHighlights,
-    lastValidParsedJsonObject,
-    setError
-  } = useJsonProcessor();
+  // Helper to sort JSON object keys
+  function sortJsonKeys(obj: any, order: 'asc' | 'desc'): any {
+    if (Array.isArray(obj)) {
+      return obj.map(item => sortJsonKeys(item, order));
+    } else if (obj && typeof obj === 'object' && obj.constructor === Object) {
+      const sortedKeys = Object.keys(obj).sort((a, b) => order === 'asc' ? a.localeCompare(b) : b.localeCompare(a));
+      const result: any = {};
+      for (const key of sortedKeys) {
+        result[key] = sortJsonKeys(obj[key], order);
+      }
+      return result;
+    }
+    return obj;
+  }
+
+  const handleFormatOutput = useCallback(() => {
+    try {
+      const output = isOutputCompact ? compactedOutput : formattedJson;
+      if (!output?.trim()) return;
+      const parsed = JSON.parse(output);
+      const pretty = JSON.stringify(parsed, null, 2);
+      setCompactedOutput('');
+      setIsOutputCompact(false);
+      forceProcessJson(pretty, 'json');
+    } catch {}
+  }, [isOutputCompact, compactedOutput, formattedJson, forceProcessJson]);
+
+  const handleSortOutput = useCallback((order: 'asc' | 'desc') => {
+    try {
+      const output = isOutputCompact ? compactedOutput : formattedJson;
+      if (!output?.trim()) return;
+      const parsed = JSON.parse(output);
+      const sorted = sortJsonKeys(parsed, order);
+      const pretty = JSON.stringify(sorted, null, 2);
+      setCompactedOutput('');
+      setIsOutputCompact(false);
+      forceProcessJson(pretty, 'json');
+      setSortOrder(order);
+      setIsSortMenuOpen(false);
+    } catch {}
+  }, [isOutputCompact, compactedOutput, formattedJson, forceProcessJson]);
 
   // Create stable reference to processJson to avoid race conditions
   const processJsonRef = useRef(processJson);
@@ -511,6 +569,56 @@ const App: React.FC = () => {
                   <CompressIcon className="w-4 h-4" />
                 </Button>
                 <Button 
+                  onClick={handleFormatOutput}
+                  variant="secondary"
+                  size="sm"
+                  ringOffsetClass="focus:ring-offset-slate-700/30"
+                  disabled={isLoading || isAiLoading || !formattedJson?.trim()}
+                  title="Pretty-print JSON"
+                >
+                  <AlignRightIcon className="w-4 h-4" />
+                </Button>
+                <div className="relative">
+                  <Button
+                    onClick={() => setIsSortMenuOpen(prev => !prev)}
+                    variant="secondary"
+                    size="sm"
+                    ringOffsetClass="focus:ring-offset-slate-700/30"
+                    disabled={isLoading || isAiLoading || !formattedJson?.trim()}
+                    title="Sort JSON keys"
+                  >
+                    <FunnelIcon className="w-4 h-4" />
+                  </Button>
+                  {isSortMenuOpen && (
+                    <div className={`absolute right-0 mt-2 w-28 backdrop-blur-md border rounded-md shadow-lg py-1 z-20 ${
+                      theme === 'dark' 
+                        ? 'bg-slate-600/80 border-slate-500/50' 
+                        : 'bg-white/80 border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => handleSortOutput('asc')}
+                        className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                          theme === 'dark'
+                            ? 'text-slate-200 hover:bg-slate-500/50'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Sort Ascending
+                      </button>
+                      <button
+                        onClick={() => handleSortOutput('desc')}
+                        className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                          theme === 'dark'
+                            ? 'text-slate-200 hover:bg-slate-500/50'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        Sort Descending
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <Button 
                   onClick={handleCopyOutput} 
                   variant="secondary" 
                   ringOffsetClass="focus:ring-offset-slate-700/30" 
@@ -539,7 +647,7 @@ const App: React.FC = () => {
                         ? 'bg-slate-600/80 border-slate-500/50' 
                         : 'bg-white/80 border-gray-200'
                     }`}>
-                      {(['txt', 'json', 'py', 'xml', 'yaml', 'csv', 'toml', 'md'] as const).map((fmt) => (
+                      {(['json', 'py', 'txt'] as const).map((fmt) => (
                         <button
                           key={fmt}
                           onClick={() => handleSaveOutput(fmt)}
@@ -548,7 +656,7 @@ const App: React.FC = () => {
                               ? 'text-slate-200 hover:bg-slate-500/50'
                               : 'text-gray-700 hover:bg-gray-100'
                           }`}
-                          disabled={isLoading || !canSave}
+                          disabled={!canSave || isLoading}
                           title={`Save as .${fmt}`}
                         >
                           Save as .{fmt}
