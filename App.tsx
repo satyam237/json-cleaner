@@ -430,6 +430,44 @@ const App: React.FC = () => {
     onSearch: handleSearch,
   });
 
+  const saveDropdownRef = useRef<HTMLDivElement>(null);
+  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const sortButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Click-away for save dropdown
+  useEffect(() => {
+    if (!isSaveDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        saveDropdownRef.current &&
+        !saveDropdownRef.current.contains(e.target as Node) &&
+        saveButtonRef.current &&
+        !saveButtonRef.current.contains(e.target as Node)
+      ) {
+        setIsSaveDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isSaveDropdownOpen]);
+
+  // Click-away for sort dropdown
+  useEffect(() => {
+    if (!isSortMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (
+        sortDropdownRef.current &&
+        !sortDropdownRef.current.contains(e.target as Node) &&
+        sortButtonRef.current &&
+        !sortButtonRef.current.contains(e.target as Node)
+      ) {
+        setIsSortMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [isSortMenuOpen]);
 
 
   return (
@@ -546,7 +584,7 @@ const App: React.FC = () => {
           />
         </div>
 
-        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50">
+        <div className="flex flex-col bg-slate-700/30 backdrop-blur-lg shadow-xl rounded-lg p-1 border border-slate-600/50 overflow-visible">
           <div className="p-3 border-b border-slate-600/50">
             <div className="flex justify-between items-center mb-2">
               <h2 className={`text-xl font-semibold ${
@@ -580,6 +618,7 @@ const App: React.FC = () => {
                 </Button>
                 <div className="relative">
                   <Button
+                    ref={sortButtonRef}
                     onClick={() => setIsSortMenuOpen(prev => !prev)}
                     variant="secondary"
                     size="sm"
@@ -590,32 +629,35 @@ const App: React.FC = () => {
                     <FunnelIcon className="w-4 h-4" />
                   </Button>
                   {isSortMenuOpen && (
-                    <div className={`absolute right-0 mt-2 w-28 backdrop-blur-md border rounded-md shadow-lg py-1 z-20 ${
-                      theme === 'dark' 
-                        ? 'bg-slate-600/80 border-slate-500/50' 
-                        : 'bg-white/80 border-gray-200'
-                    }`}>
-                      <button
-                        onClick={() => handleSortOutput('asc')}
-                        className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                          theme === 'dark'
-                            ? 'text-slate-200 hover:bg-slate-500/50'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Sort Ascending
-                      </button>
-                      <button
-                        onClick={() => handleSortOutput('desc')}
-                        className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                          theme === 'dark'
-                            ? 'text-slate-200 hover:bg-slate-500/50'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        Sort Descending
-                      </button>
-                    </div>
+                    <>
+                      <div className="fixed inset-0 z-40" style={{ pointerEvents: 'auto' }} onClick={() => setIsSortMenuOpen(false)} />
+                      <div ref={sortDropdownRef} className={`absolute right-0 mt-2 w-28 backdrop-blur-md border rounded-md shadow-lg py-1 z-50 ${
+                        theme === 'dark' 
+                          ? 'bg-slate-600/80 border-slate-500/50' 
+                          : 'bg-white/80 border-gray-200'
+                      }`}>
+                        <button
+                          onClick={() => handleSortOutput('asc')}
+                          className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                            theme === 'dark'
+                              ? 'text-slate-200 hover:bg-slate-500/50'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Sort Ascending
+                        </button>
+                        <button
+                          onClick={() => handleSortOutput('desc')}
+                          className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                            theme === 'dark'
+                              ? 'text-slate-200 hover:bg-slate-500/50'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          Sort Descending
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
                 <Button 
@@ -631,6 +673,7 @@ const App: React.FC = () => {
                 </Button>
                 <div className="relative">
                   <Button 
+                    ref={saveButtonRef}
                     onClick={() => setIsSaveDropdownOpen(prev => !prev)} 
                     variant="secondary" 
                     ringOffsetClass="focus:ring-offset-slate-700/30" 
@@ -642,27 +685,30 @@ const App: React.FC = () => {
                     <DocumentArrowDownIcon className="w-4 h-4" />
                   </Button>
                   {isSaveDropdownOpen && (
-                    <div className={`absolute right-0 mt-2 w-48 backdrop-blur-md border rounded-md shadow-lg py-1 z-10 ${
-                      theme === 'dark' 
-                        ? 'bg-slate-600/80 border-slate-500/50' 
-                        : 'bg-white/80 border-gray-200'
-                    }`}>
-                      {(['json', 'py', 'txt'] as const).map((fmt) => (
-                        <button
-                          key={fmt}
-                          onClick={() => handleSaveOutput(fmt)}
-                          className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                            theme === 'dark'
-                              ? 'text-slate-200 hover:bg-slate-500/50'
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                          disabled={!canSave || isLoading}
-                          title={`Save as .${fmt}`}
-                        >
-                          Save as .{fmt}
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      <div className="fixed inset-0 z-40" style={{ pointerEvents: 'auto' }} onClick={() => setIsSaveDropdownOpen(false)} />
+                      <div ref={saveDropdownRef} className={`absolute right-0 mt-2 w-48 backdrop-blur-md border rounded-md shadow-lg py-1 z-50 ${
+                        theme === 'dark' 
+                          ? 'bg-slate-600/80 border-slate-500/50' 
+                          : 'bg-white/80 border-gray-200'
+                      }`}>
+                        {(['json', 'py', 'txt'] as const).map((fmt) => (
+                          <button
+                            key={fmt}
+                            onClick={() => handleSaveOutput(fmt)}
+                            className={`block w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                              theme === 'dark'
+                                ? 'text-slate-200 hover:bg-slate-500/50'
+                                : 'text-gray-700 hover:bg-gray-100'
+                            }`}
+                            disabled={!canSave || isLoading}
+                            title={`Save as .${fmt}`}
+                          >
+                            Save as .{fmt}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
