@@ -11,6 +11,7 @@ interface JsonOutputProps {
   isTextWrapped?: boolean;
   searchMatches?: number[];
   currentSearchMatch?: { lineIndex: number; startIndex: number; endIndex: number } | null;
+  editable?: boolean;
 }
 
 // Chevron icons for collapse/expand
@@ -33,7 +34,8 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   showAiHighlights = false,
   isTextWrapped = false,
   searchMatches = [],
-  currentSearchMatch = null
+  currentSearchMatch = null,
+  editable = false
 }) => {
   const { theme } = useTheme();
   const contentRef = useRef<HTMLPreElement>(null);
@@ -42,6 +44,12 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
   const [lineCount, setLineCount] = useState(1);
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [isValidJson, setIsValidJson] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(data);
+
+  useEffect(() => {
+    setEditValue(data);
+  }, [data]);
 
   // Parse structure for both JSON and Python-like syntax
   const jsonStructure = useMemo(() => {
@@ -137,8 +145,8 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
         const beforeMatch = processedLine.substring(0, currentSearchMatch.startIndex);
         const matchText = processedLine.substring(currentSearchMatch.startIndex, currentSearchMatch.endIndex);
         const afterMatch = processedLine.substring(currentSearchMatch.endIndex);
-        
-        processedLine = `${beforeMatch}<mark class="bg-yellow-300 text-black font-semibold">${matchText}</mark>${afterMatch}`;
+        // Add a visible border/background to the current match
+        processedLine = `${beforeMatch}<mark class="bg-yellow-300 text-black font-semibold px-1 rounded border-2 border-yellow-500 animate-pulse">${matchText}</mark>${afterMatch}`;
       }
       
       // Apply AI change highlighting
@@ -157,6 +165,21 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
     return highlightedLines.join('');
   }, [showAiHighlights, aiChanges, displayData, searchMatches, currentSearchMatch]);
 
+  // Scroll to current search match when it changes
+  useEffect(() => {
+    if (currentSearchMatch && contentRef.current) {
+      const lines = displayData.split('\n');
+      const lineNumber = currentSearchMatch.lineIndex;
+      // Find the scroll position for the line
+      const pre = contentRef.current;
+      const lineHeight = pre.scrollHeight / lines.length;
+      pre.scrollTo({
+        top: Math.max(0, lineNumber * lineHeight - pre.clientHeight / 2),
+        behavior: 'smooth',
+      });
+    }
+  }, [currentSearchMatch, displayData]);
+
   // Sync scroll between content, highlights, and line numbers
   const handleScroll = useCallback((e: React.UIEvent<HTMLPreElement>) => {
     if (highlightRef.current && lineNumbersRef.current) {
@@ -168,6 +191,15 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
 
   return (
     <div className={`relative flex w-full h-full overflow-hidden rounded-b-md ${className || ''}`}>
+      {/* Edit Mode Toggle */}
+      {editable && (
+        <button
+          className="absolute top-2 right-2 z-20 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+          onClick={() => setIsEditing((v) => !v)}
+        >
+          {isEditing ? 'View' : 'Edit'}
+        </button>
+      )}
       {/* Line Numbers with Collapse/Expand Controls */}
       <div 
         ref={lineNumbersRef}
@@ -232,55 +264,65 @@ export const JsonOutput: React.FC<JsonOutputProps> = ({
 
       {/* Content Area Container */}
       <div className="relative flex-1 overflow-hidden">
-        {/* Highlight layer */}
-        {((showAiHighlights && aiChanges.length > 0) || (searchMatches.length > 0 && currentSearchMatch)) && (
-          <div
-            ref={highlightRef}
-            className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-0"
-            style={{ 
-              fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-              whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
-              wordWrap: isTextWrapped ? 'break-word' : 'normal',
-              overflowWrap: isTextWrapped ? 'break-word' : 'normal',
-            }}
-            dangerouslySetInnerHTML={{ __html: createHighlightedContent() }}
+        {isEditing && editable ? (
+          <textarea
+            className="w-full h-full p-4 font-mono text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-200 border-none outline-none resize-none z-10 relative"
+            style={{ minHeight: '100%', minWidth: '100%' }}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            autoFocus
           />
-        )}
-        
-        {/* Actual content */}
-        <pre 
-          ref={contentRef}
-          className={`w-full h-full p-4 overflow-auto relative z-10 ${
-            theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
-          }`}
-          style={{ 
-            fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
-            fontSize: '14px',
-            lineHeight: '1.5',
-            background: (showAiHighlights || (searchMatches.length > 0 && currentSearchMatch)) ? 'transparent' : 
-              theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
-            tabSize: 2,
-            whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
-            wordWrap: isTextWrapped ? 'break-word' : 'normal',
-            overflowWrap: isTextWrapped ? 'break-word' : 'normal',
-            margin: 0
-          }}
-          onScroll={handleScroll}
-        >
-          <code className="leading-6">{displayData}</code>
-        </pre>
-        
-        {/* Background for when not highlighting */}
-        {!showAiHighlights && !(searchMatches.length > 0 && currentSearchMatch) && (
-          <div 
-            className="absolute inset-0 pointer-events-none -z-10"
-            style={{ 
-              background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)' 
-            }}
-          />
+        ) : (
+          <>
+            {/* Highlight layer */}
+            {((showAiHighlights && aiChanges.length > 0) || (searchMatches.length > 0 && currentSearchMatch)) && (
+              <div
+                ref={highlightRef}
+                className="absolute inset-0 p-4 pointer-events-none overflow-auto whitespace-pre text-transparent z-0"
+                style={{ 
+                  fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                  fontSize: '14px',
+                  lineHeight: '1.5',
+                  background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                  whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+                  wordWrap: isTextWrapped ? 'break-word' : 'normal',
+                  overflowWrap: isTextWrapped ? 'break-word' : 'normal',
+                }}
+                dangerouslySetInnerHTML={{ __html: createHighlightedContent() }}
+              />
+            )}
+            {/* Actual content */}
+            <pre 
+              ref={contentRef}
+              className={`w-full h-full p-4 overflow-auto relative z-10 ${
+                theme === 'dark' ? 'text-slate-200' : 'text-gray-800'
+              }`}
+              style={{ 
+                fontFamily: 'Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace', 
+                fontSize: '14px',
+                lineHeight: '1.5',
+                background: (showAiHighlights || (searchMatches.length > 0 && currentSearchMatch)) ? 'transparent' : 
+                  theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                tabSize: 2,
+                whiteSpace: isTextWrapped ? 'pre-wrap' : 'pre',
+                wordWrap: isTextWrapped ? 'break-word' : 'normal',
+                overflowWrap: isTextWrapped ? 'break-word' : 'normal',
+                margin: 0
+              }}
+              onScroll={handleScroll}
+            >
+              <code className="leading-6">{displayData}</code>
+            </pre>
+            {/* Background for when not highlighting */}
+            {!showAiHighlights && !(searchMatches.length > 0 && currentSearchMatch) && (
+              <div 
+                className="absolute inset-0 pointer-events-none -z-10"
+                style={{ 
+                  background: theme === 'dark' ? 'rgba(30, 41, 59, 0.5)' : 'rgba(255, 255, 255, 0.5)' 
+                }}
+              />
+            )}
+          </>
         )}
       </div>
     </div>
